@@ -15,7 +15,7 @@
 
 import type { CompareCreator } from "./db/compare";
 import type { CreatorMetrics } from "./metrics/directory";
-import { engagementRate, engagementRateLabel } from "./metrics/engagement";
+import { engagementRate } from "./metrics/engagement";
 import { cpm, costPerEngagement } from "./metrics/cost";
 import { followerGrowth } from "./metrics/growth";
 import type { MetricResult } from "./metrics/types";
