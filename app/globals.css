@@ -1,0 +1,194 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ---------------------------------------------------------------------------
+   Talent Grid design tokens.
+
+   The palette is fixed by the build spec. The orange is a pointer, not a
+   theme: it is permitted on the active nav underline, the primary button, the
+   portrait hover handle badge, the best-value marker in comparison tables, and
+   one stat card on the home page. Nowhere else.
+
+   shadcn's semantic variables are re-pointed at this palette rather than kept
+   alongside it, so there is exactly one source of colour truth. Note that
+   shadcn's `--accent` means "quiet hover surface" in its own components, which
+   is not our accent; it is mapped to stone, and the brand orange lives on
+   `--brand`.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  /* Palette ------------------------------------------------------------- */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --color-brand: var(--brand);
+  --color-brand-quiet: var(--brand-quiet);
+  --color-stone: var(--stone);
+  --color-warn: var(--warn);
+
+  /* shadcn semantic aliases --------------------------------------------- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Type ---------------------------------------------------------------- */
+  /* Scale is 12 / 14 / 16 / 20 / 28 / 40 / 64 and nothing else. Sizes above
+     the scale are cleared so they cannot be reached by accident. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 1.2;
+  --text-2xl: 2.5rem;
+  --text-2xl--line-height: 1.08;
+  --text-3xl: 4rem;
+  --text-3xl--line-height: 1;
+  --text-4xl: initial;
+  --text-5xl: initial;
+  --text-6xl: initial;
+  --text-7xl: initial;
+  --text-8xl: initial;
+  --text-9xl: initial;
+
+  /* Bangla faces sit after the Latin faces so Bangla creator names never
+     render as tofu boxes. */
+  --font-sans: var(--font-inter), var(--font-noto-bengali), ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument-serif), var(--font-noto-bengali),
+    ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Radii: 12px on portrait cards, 8px on controls, 0 on table cells. */
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: 0.75rem;
+  --radius-portrait: 0.75rem;
+
+  /* The only shadow in the product, reserved for the sticky compare tray. */
+  --shadow-tray: 0 -2px 24px -4px rgb(20 20 20 / 0.12);
+
+  /* 12 column / 1280px / 24px gutters */
+  --spacing-gutter: 1.5rem;
+  --container-page: 80rem;
+}
+
+:root {
+  --canvas: #fafaf8;
+  --surface: #ffffff;
+  --ink: #141414;
+  --ink-muted: #6b6b68;
+  --hairline: #e4e3df;
+  --brand: #ff4d0d;
+  --brand-quiet: #fff1ec;
+  --stone: #e8e2da;
+  /* Functional signal colour, outside the spec palette. Used only for
+     destructive confirmations, blacklisted status and expired share links. */
+  --warn: #8c1d0e;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface);
+  --secondary-foreground: var(--ink);
+  --muted: #f4f3f0;
+  --muted-foreground: var(--ink-muted);
+  --accent: #f4f3f0;
+  --accent-foreground: var(--ink);
+  --destructive: var(--warn);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--ink-muted);
+
+  /* Radar and line charts stay neutral; the accent is reserved for the
+     currently hovered series. */
+  --chart-1: #141414;
+  --chart-2: #6b6b68;
+  --chart-3: #9a9a95;
+  --chart-4: #c2beb6;
+  --chart-5: #e8e2da;
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Numerals are the one place the serif is used at small sizes: follower
+     counts and rates read as editorial rather than dashboard-generic. */
+  .numeral {
+    font-family: var(--font-display);
+    font-feature-settings: "tnum" 1;
+    letter-spacing: 0.01em;
+  }
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  /* Portrait treatment. Grayscale is never baked into the stored file. */
+  .portrait-media {
+    filter: grayscale(1) contrast(1.08);
+    transition: filter 200ms ease;
+  }
+  .group:hover .portrait-media {
+    filter: grayscale(0) contrast(1);
+  }
+  .portrait-scrim {
+    background: linear-gradient(
+      to top,
+      rgb(0 0 0 / 0.55) 0%,
+      rgb(0 0 0 / 0.25) 32%,
+      transparent 62%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
