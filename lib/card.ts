@@ -9,7 +9,15 @@
  */
 
 import type { DirectoryRow } from "./db/creators";
-import { PLATFORM_LABEL } from "./types";
+import { PLATFORM_LABEL, PLATFORMS, type Platform } from "./types";
+
+export type CardAccount = {
+  platform: Platform;
+  platformLabel: string;
+  handle: string | null;
+  followers: number | null;
+  isPrimary: boolean;
+};
 
 export type CardData = {
   slug: string;
@@ -22,6 +30,8 @@ export type CardData = {
   engagementRate: number | null;
   engagementLabel: string;
   tagLabels: string[];
+  /** One row per platform the creator is actually on, primary first. */
+  accounts: CardAccount[];
 };
 
 export function toCardData(
@@ -40,5 +50,20 @@ export function toCardData(
     engagementLabel:
       engagement.qualifier === "by_followers" ? "ER by followers" : "Engagement rate",
     tagLabels: row.tags.map((tag) => tag.label),
+    accounts: [...row.accounts]
+      // Fixed platform order, then primary first, so the icons sit in the same
+      // place on every card and the eye can scan down a column of them.
+      .sort(
+        (a, b) =>
+          Number(b.isPrimary) - Number(a.isPrimary) ||
+          PLATFORMS.indexOf(a.platform) - PLATFORMS.indexOf(b.platform),
+      )
+      .map((account) => ({
+        platform: account.platform,
+        platformLabel: PLATFORM_LABEL[account.platform],
+        handle: account.handle,
+        followers: account.latest?.followers ?? null,
+        isPrimary: account.isPrimary,
+      })),
   };
 }

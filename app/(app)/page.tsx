@@ -6,9 +6,11 @@ import { CreatorCard } from "@/components/creator/creator-card";
 import { toCardData } from "@/lib/card";
 import { PortraitWall } from "@/components/chrome/portrait-wall";
 import { HomeSearch } from "@/components/chrome/home-search";
+import { CategoryIcon } from "@/components/platform-icon";
+import { ByTheNumbers } from "@/components/home/by-the-numbers";
 import { SectionHeading } from "@/components/ui-bits";
 import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
-import { Portrait } from "@/components/creator/portrait";
+import { PLATFORMS, PLATFORM_LABEL, TIERS, TIER_LABEL, TIER_RANGE_LABEL } from "@/lib/types";
 
 export const metadata = { title: "Talent Grid" };
 
@@ -26,27 +28,84 @@ export default async function HomePage() {
     .map((row) => ({ row, score: metrics.get(row.id)?.score.value?.score ?? null }))
     .filter((entry): entry is { row: (typeof active)[number]; score: number } => entry.score !== null)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 6)
+    .slice(0, 8)
     .map((entry) => entry.row);
 
-  const suggestionsAreScored = scored.length >= 6;
+  const suggestionsAreScored = scored.length >= 8;
   const suggestions = suggestionsAreScored
     ? scored
-    : [...active].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
+    : [...active]
+        // Without scores to rank on, the largest accounts are the most useful
+        // thing to put in front of someone opening the tool.
+        .sort((a, b) => (b.totalReach ?? -1) - (a.totalReach ?? -1))
+        .slice(0, 8);
 
   const totalReach = rows.reduce<number | null>((sum, row) => {
     if (row.totalReach === null) return sum;
     return (sum ?? 0) + row.totalReach;
   }, null);
 
-  const populatedCategories = categories.filter((category) => category.creatorCount > 0);
+  const populatedCategories = categories
+    .filter((category) => category.creatorCount > 0)
+    .sort((a, b) => b.creatorCount - a.creatorCount);
+
+  // By the numbers -----------------------------------------------------------
+
+  const tierData = TIERS.map((tier) => ({
+    tier: TIER_LABEL[tier],
+    range: TIER_RANGE_LABEL[tier],
+    creators: rows.filter((row) => row.tier === tier).length,
+  }));
+
+  const platformData = PLATFORMS.map((platform) => {
+    const on = rows.filter((row) =>
+      row.accounts.some((account) => account.platform === platform),
+    );
+    const reach = on.reduce<number | null>((sum, row) => {
+      const followers = row.accounts.find((a) => a.platform === platform)?.latest?.followers;
+      if (followers === null || followers === undefined) return sum;
+      return (sum ?? 0) + followers;
+    }, null);
+    return {
+      platform,
+      label: PLATFORM_LABEL[platform],
+      creators: on.length,
+      reach,
+    };
+  }).filter((entry) => entry.creators > 0);
+
+  const completeness = [
+    {
+      label: "Has a portrait",
+      done: rows.filter((row) => row.portraitUrl !== null).length,
+      total: rows.length,
+    },
+    {
+      label: "Has engagement data",
+      done: rows.filter(
+        (row) =>
+          row.primaryAvgLikes !== null ||
+          row.primaryAvgComments !== null ||
+          row.primaryAvgShares !== null,
+      ).length,
+      total: rows.length,
+    },
+    {
+      label: "Has a rate on file",
+      done: rows.filter((row) => row.cheapestRateBdt !== null).length,
+      total: rows.length,
+    },
+    {
+      label: "Verified against the platform",
+      done: rows.filter((row) => row.dataConfidence !== "unverified").length,
+      total: rows.length,
+    },
+  ];
 
   return (
     <>
       {/* Hero. The portraits are the product, so they are the backdrop. */}
       <section className="relative overflow-hidden border-b border-hairline">
-        {/* Creators with a portrait lead, so the wall reads as photographs
-            rather than as a grid of initials while the library fills up. */}
         <PortraitWall
           creators={[...rows]
             .sort((a, b) => Number(b.portraitUrl !== null) - Number(a.portraitUrl !== null))
@@ -68,7 +127,7 @@ export default async function HomePage() {
       </section>
 
       <div className="mx-auto max-w-[80rem] space-y-16 px-6 py-16">
-        {/* Categories */}
+        {/* Categories: a compact strip of destinations, not a photo gallery. */}
         <section className="space-y-6">
           <SectionHeading
             action={
@@ -85,59 +144,21 @@ export default async function HomePage() {
               No creators are filed under a category yet.
             </p>
           ) : (
-            <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {populatedCategories.map((category) => {
-                // A category tile is only as good as the face on it, so a
-                // creator with a portrait is preferred over merely the first.
-                const inCategory = rows.filter(
-                  (row) => row.primaryCategoryId === category.id,
-                );
-                const representative =
-                  inCategory.find((row) => row.portraitUrl !== null) ?? inCategory[0];
-                return (
-                  <li key={category.id}>
-                    <Link href={`/creators?category=${category.slug}`} className="group block">
-                      <Portrait
-                        name={representative?.displayName ?? category.name}
-                        src={representative?.portraitUrl}
-                        sizes="(min-width: 1024px) 400px, 90vw"
-                        className="aspect-[4/3]"
-                      />
-                      <div className="mt-3 flex items-baseline justify-between gap-3">
-                        <h3 className="text-base">{category.name}</h3>
-                        <span className="numeral text-sm text-ink-muted">
-                          {category.creatorCount}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        {/* Suggested creators */}
-        <section className="space-y-6">
-          <SectionHeading>
-            {suggestionsAreScored ? "Suggested creators" : "Recently added"}
-          </SectionHeading>
-          {!suggestionsAreScored ? (
-            <p className="-mt-2 text-sm text-ink-muted">
-              Fewer than six creators have enough verified data to be scored yet, so these
-              are the most recently updated records instead.
-            </p>
-          ) : null}
-
-          {suggestions.length === 0 ? (
-            <p className="text-sm text-ink-muted">No creators yet.</p>
-          ) : (
-            <ul className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((row) => (
-                <li key={row.id}>
-                  <CreatorCard
-                    data={toCardData(row, metrics.get(row.id)!.engagement)}
-                  />
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {populatedCategories.map((category) => (
+                <li key={category.id}>
+                  <Link
+                    href={`/creators?category=${category.slug}`}
+                    className="flex items-center gap-3 rounded-lg border border-hairline bg-surface px-3 py-3 transition-colors hover:border-ink/25"
+                  >
+                    <CategoryIcon slug={category.slug} className="text-ink-muted" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm">{category.name}</span>
+                      <span className="numeral block text-xs text-ink-muted">
+                        {formatNumber(category.creatorCount)}
+                      </span>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -161,7 +182,49 @@ export default async function HomePage() {
             tone="stone"
             label="Categories"
             value={formatNumber(categories.length)}
+            note={`${populatedCategories.length} of them have creators filed under them.`}
           />
+        </section>
+
+        {/* By the numbers */}
+        <section className="space-y-6">
+          <SectionHeading>By the numbers</SectionHeading>
+          <ByTheNumbers
+            tiers={tierData}
+            platforms={platformData}
+            completeness={completeness}
+          />
+        </section>
+
+        {/* Suggested creators */}
+        <section className="space-y-6">
+          <SectionHeading
+            action={
+              <Link href="/creators" className="text-sm text-ink-muted hover:text-ink">
+                See all
+              </Link>
+            }
+          >
+            {suggestionsAreScored ? "Suggested creators" : "Biggest reach"}
+          </SectionHeading>
+          {!suggestionsAreScored ? (
+            <p className="-mt-2 text-sm text-ink-muted">
+              Not enough creators have verified engagement data to be scored yet, so
+              these are the largest accounts on file instead.
+            </p>
+          ) : null}
+
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-ink-muted">No creators yet.</p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {suggestions.map((row) => (
+                <li key={row.id}>
+                  <CreatorCard data={toCardData(row, metrics.get(row.id)!.engagement)} />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </>

@@ -134,7 +134,7 @@ export default async function BrowsePage({
             canSeeRates={isEditor(user)}
           />
         ) : (
-          <ul className="grid grid-cols-1 gap-x-6 gap-y-10 pt-8 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-10 pt-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {results.map((row) => (
               <li key={row.id}>
                 <CreatorCard data={toCardData(row, metrics.get(row.id)!.engagement)} />
