@@ -45,11 +45,13 @@ export default async function HomePage() {
     <>
       {/* Hero. The portraits are the product, so they are the backdrop. */}
       <section className="relative overflow-hidden border-b border-hairline">
+        {/* Creators with a portrait lead, so the wall reads as photographs
+            rather than as a grid of initials while the library fills up. */}
         <PortraitWall
-          creators={rows.slice(0, 18).map((row) => ({
-            name: row.displayName,
-            portraitUrl: row.portraitUrl,
-          }))}
+          creators={[...rows]
+            .sort((a, b) => Number(b.portraitUrl !== null) - Number(a.portraitUrl !== null))
+            .slice(0, 20)
+            .map((row) => ({ name: row.displayName, portraitUrl: row.portraitUrl }))}
         />
         <div className="relative mx-auto max-w-[46rem] px-6 py-24 text-center sm:py-32">
           <h1 className="font-display text-2xl leading-[1.05] text-ink sm:text-3xl">
@@ -85,9 +87,13 @@ export default async function HomePage() {
           ) : (
             <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {populatedCategories.map((category) => {
-                const representative = rows.find(
+                // A category tile is only as good as the face on it, so a
+                // creator with a portrait is preferred over merely the first.
+                const inCategory = rows.filter(
                   (row) => row.primaryCategoryId === category.id,
                 );
+                const representative =
+                  inCategory.find((row) => row.portraitUrl !== null) ?? inCategory[0];
                 return (
                   <li key={category.id}>
                     <Link href={`/creators?category=${category.slug}`} className="group block">

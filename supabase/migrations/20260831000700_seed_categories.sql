@@ -35,6 +35,9 @@ from (values
   ('Comedy',     'comedy'),
   ('Education',  'education'),
   ('Parenting',  'parenting'),
-  ('Automotive', 'automotive')
+  ('Automotive', 'automotive'),
+  -- Not in the original spec seed, but the agency's image folders include a
+  -- Sports set, so the category exists rather than being invented at import.
+  ('Sports',     'sports')
 ) as v(name, slug)
 on conflict (slug) do nothing;

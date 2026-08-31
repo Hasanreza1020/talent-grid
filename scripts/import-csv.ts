@@ -15,10 +15,10 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { parse } from "csv-parse/sync";
+import { parseSpreadsheet } from "../lib/import/parse-file";
 
-import { createAdminClient } from "./supabase-admin";
-import { transformRows, type SourceRow, type TransformResult } from "../lib/import/transform";
+import { createWriteClient } from "./supabase-admin";
+import { transformRows, type TransformResult } from "../lib/import/transform";
 import { normaliseName } from "../lib/dedup";
 import { PLATFORM_LABEL } from "../lib/types";
 
@@ -80,6 +80,7 @@ function buildReport(
   lines.push(`| | |`);
   lines.push(`| --- | --- |`);
   lines.push(`| Source rows read | ${result.sourceRowCount} |`);
+  lines.push(`| Blank separator rows skipped | ${result.blankRows.length} |`);
   lines.push(`| Creators after merging | ${result.creators.length} |`);
   lines.push(`| Rows merged away | ${result.sourceRowCount - result.creators.length} |`);
   lines.push(`| Accounts created | ${totalAccounts} |`);
@@ -235,7 +236,7 @@ function buildReport(
 // Database -----------------------------------------------------------------
 
 async function commitToDatabase(args: Args, result: TransformResult) {
-  const supabase = createAdminClient();
+  const supabase = await createWriteClient();
   const capturedOn = today();
 
   const { data: category, error: categoryError } = await supabase
@@ -357,13 +358,8 @@ async function commitToDatabase(args: Args, result: TransformResult) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
-  const csv = readFileSync(args.file, "utf8");
-  const rows = parse(csv, {
-    columns: true,
-    skip_empty_lines: true,
-    relax_column_count: true,
-    bom: true,
-  }) as SourceRow[];
+  const { rows, delimiter } = parseSpreadsheet(readFileSync(args.file, "utf8"));
+  console.log(`Parsed as ${delimiter === "	" ? "tab" : "comma"}-separated, ${rows.length} rows.`);
 
   const result = transformRows(rows);
 

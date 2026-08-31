@@ -82,6 +82,8 @@ export type TransformResult = {
     url: string;
     reason: string;
   }[];
+  /** Fully empty separator rows, skipped rather than reported as failures. */
+  blankRows: number[];
   notes: string[];
   sourceRowCount: number;
 };
@@ -132,6 +134,7 @@ export function preferredDisplayName(names: string[]): string {
 
 export function transformRows(rows: SourceRow[]): TransformResult {
   const failures: ParseFailure[] = [];
+  const blankRows: number[] = [];
   const notes: string[] = [];
   const unresolvedHandles: TransformResult["unresolvedHandles"] = [];
 
@@ -147,14 +150,23 @@ export function transformRows(rows: SourceRow[]): TransformResult {
   rows.forEach((row, index) => {
     const rowNumber = index + 2;
     const displayName = cleanCell(row["Name"]);
+
     if (!displayName) {
-      failures.push({
-        rowNumber,
-        creatorName: "(blank)",
-        column: "Name",
-        rawValue: String(row["Name"] ?? ""),
-        reason: "Row has no name, so it cannot be imported.",
-      });
+      // The source sheets use fully blank rows as visual separators between
+      // groups of creators. Those are skipped silently; a row that carries
+      // data but no name is a genuine problem and is reported.
+      const hasAnyValue = Object.values(row).some((value) => cleanCell(value) !== "");
+      if (hasAnyValue) {
+        failures.push({
+          rowNumber,
+          creatorName: "(no name)",
+          column: "Name",
+          rawValue: String(row["Name"] ?? ""),
+          reason: "Row carries data but no name, so it cannot be imported.",
+        });
+      } else {
+        blankRows.push(rowNumber);
+      }
       return;
     }
 
@@ -316,6 +328,7 @@ export function transformRows(rows: SourceRow[]): TransformResult {
     emptyColumns,
     droppedColumns: ALWAYS_DROPPED_COLUMNS.filter((column) => columns.includes(column)),
     unresolvedHandles,
+    blankRows,
     notes,
     sourceRowCount: rows.length,
   };

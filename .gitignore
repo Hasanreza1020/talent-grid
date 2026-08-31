@@ -46,3 +46,5 @@ scripts/output/*
 !scripts/output/.gitkeep
 supabase/.temp/
 supabase/.branches/
+
+.vercel

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parse } from "csv-parse/sync";
+import { parseSpreadsheet } from "@/lib/import/parse-file";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, isAdmin } from "@/lib/db/user";
 import { transformRows, type SourceRow, type TransformResult } from "@/lib/import/transform";
@@ -23,7 +23,7 @@ export async function previewImport(formData: FormData): Promise<PreviewResult> 
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Choose a CSV file." };
+    return { ok: false, error: "Choose a CSV or TSV file." };
   }
   if (file.size > 5_000_000) {
     return { ok: false, error: "That file is larger than 5 MB. Split it and try again." };
@@ -31,16 +31,11 @@ export async function previewImport(formData: FormData): Promise<PreviewResult> 
 
   let rows: SourceRow[];
   try {
-    rows = parse(await file.text(), {
-      columns: true,
-      skip_empty_lines: true,
-      relax_column_count: true,
-      bom: true,
-    }) as SourceRow[];
+    rows = parseSpreadsheet(await file.text()).rows;
   } catch (error) {
     return {
       ok: false,
-      error: `That file could not be read as CSV: ${
+      error: `That file could not be read as a spreadsheet: ${
         error instanceof Error ? error.message : "unknown error"
       }`,
     };
