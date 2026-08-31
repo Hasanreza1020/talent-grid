@@ -165,6 +165,25 @@ function buildReport(
   }
   lines.push("");
 
+  // One URL claimed by several creators
+  if (result.sharedUrls.length) {
+    lines.push(`## One URL, more than one creator`);
+    lines.push("");
+    lines.push(
+      "These are not duplicates the matcher missed. They are different creators " +
+        "pointing at the same link, which means the sheet has a copy-paste error " +
+        "and at least one of them leads somewhere wrong. There is no way to tell " +
+        "from here which one, so both were imported exactly as given.",
+    );
+    lines.push("");
+    lines.push(`| URL | Claimed by |`);
+    lines.push(`| --- | --- |`);
+    for (const shared of result.sharedUrls) {
+      lines.push(`| \`${shared.url}\` | ${shared.creators.join(", ")} |`);
+    }
+    lines.push("");
+  }
+
   // Columns
   lines.push(`## Columns dropped`);
   lines.push("");

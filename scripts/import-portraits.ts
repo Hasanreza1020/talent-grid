@@ -25,6 +25,44 @@ import { normaliseName, nameSimilarity } from "../lib/dedup";
 const OUTPUT_WIDTH = 1000;
 const OUTPUT_HEIGHT = 1250; // 4:5
 const MATCH_THRESHOLD = 0.82;
+/**
+ * Score given when one normalised name contains the other outright. Set just
+ * above the threshold so a containment match is accepted but still loses to a
+ * closer edit-distance match for the same file.
+ */
+const CONTAINMENT_SCORE = 0.85;
+/**
+ * How long the contained run must be. Short names produce accidental
+ * containments; eight characters makes a coincidence unlikely.
+ */
+const MIN_CONTAINMENT_LENGTH = 8;
+
+/**
+ * Retries a transient failure a few times with a widening delay. Only network
+ * flakiness is worth retrying; a rejected file or a permissions error will
+ * fail identically every time and simply surfaces after the last attempt.
+ */
+async function withRetry<T>(operation: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/** True when either normalised name wholly contains the other. */
+function isContained(a: string, b: string): boolean {
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  if (shorter.length < MIN_CONTAINMENT_LENGTH) return false;
+  return longer.includes(shorter);
+}
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".jfif", ".avif"]);
 
 type Args = { dir: string; commit: boolean; reportPath: string };
@@ -82,10 +120,25 @@ async function main() {
 
     let best: { creator: (typeof creators)[number]; similarity: number } | null = null;
     for (const creator of creators ?? []) {
-      const similarity =
-        normaliseName(creator.display_name) === normalisedStem
-          ? 1
-          : nameSimilarity(creator.display_name, stem);
+      const normalisedCreator = normaliseName(creator.display_name);
+      let similarity: number;
+
+      if (normalisedCreator === normalisedStem) {
+        similarity = 1;
+      } else if (isContained(normalisedStem, normalisedCreator)) {
+        // One name sits wholly inside the other: "Khudalagse.jpg" against
+        // "Khudalagse (Fahrin Zannat Faiza)", or "Highway Foodie Masum.jpg"
+        // against "Highway Foodie". Edit distance scores these poorly because
+        // of the extra words, but containment of a long enough run of
+        // characters is a stronger signal than the distance is.
+        similarity = Math.max(
+          CONTAINMENT_SCORE,
+          nameSimilarity(creator.display_name, stem),
+        );
+      } else {
+        similarity = nameSimilarity(creator.display_name, stem);
+      }
+
       if (!best || similarity > best.similarity) best = { creator, similarity };
     }
 
@@ -127,8 +180,14 @@ async function main() {
     claimed.set(best.creator.id, file);
   }
 
+  // Creators that will still have no portrait after this run. A creator whose
+  // portrait was uploaded by an earlier run is not missing one, so counting
+  // only "not matched in this folder" would overstate the backlog badly once
+  // more than one category is loaded.
   const withoutImage = (creators ?? []).filter(
-    (creator) => !matches.some((match) => match.creatorId === creator.id),
+    (creator) =>
+      creator.portrait_url === null &&
+      !matches.some((match) => match.creatorId === creator.id),
   );
 
   let uploaded = 0;
@@ -147,10 +206,15 @@ async function main() {
           .toBuffer();
 
         const path = `portraits/${match.slug}.webp`;
-        const { error: uploadError } = await supabase.storage
-          .from("creator-media")
-          .upload(path, processed, { contentType: "image/webp", upsert: true });
-        if (uploadError) throw uploadError;
+        // Uploading a hundred files over a home connection produces the odd
+        // transient "fetch failed". Retrying is safe because the upload is an
+        // upsert to a deterministic path.
+        await withRetry(async () => {
+          const { error: uploadError } = await supabase.storage
+            .from("creator-media")
+            .upload(path, processed, { contentType: "image/webp", upsert: true });
+          if (uploadError) throw uploadError;
+        });
 
         const {
           data: { publicUrl },

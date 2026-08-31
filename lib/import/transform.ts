@@ -9,6 +9,7 @@ import { parseFollowerCount } from "../parse-followers";
 import { detectPlatform, extractHandle } from "../handles";
 import { findDuplicateGroups, type DedupCandidate, type DedupGroup } from "../dedup";
 import { uniqueSlug } from "../slug";
+import { repairMojibake } from "./mojibake";
 import type { Platform } from "../types";
 
 export type SourceRow = Record<string, string>;
@@ -84,14 +85,23 @@ export type TransformResult = {
   }[];
   /** Fully empty separator rows, skipped rather than reported as failures. */
   blankRows: number[];
+  /**
+   * One profile URL claimed by two or more different creators. Almost always a
+   * copy-paste slip in the sheet, and it means at least one of them is wrong.
+   */
+  sharedUrls: { url: string; creators: string[] }[];
   notes: string[];
   sourceRowCount: number;
 };
 
-/** Trims and removes the stray \r and \n that several source cells carry. */
+/**
+ * Trims, removes the stray \r and \n that several source cells carry, and
+ * repairs Bangla names mangled by a UTF-8 to Windows-1252 misread on export.
+ */
 export function cleanCell(value: string | undefined | null): string {
   if (value === undefined || value === null) return "";
-  return value.replace(/[\r\n]+/g, " ").trim();
+  const trimmed = value.replace(/[\r\n]+/g, " ").trim();
+  return repairMojibake(trimmed).text;
 }
 
 /**
@@ -132,6 +142,29 @@ export function preferredDisplayName(names: string[]): string {
   })[0];
 }
 
+/**
+ * Profile URLs claimed by more than one creator after merging. These are not
+ * duplicates the matcher missed: they are distinct people pointing at the same
+ * link, which means the sheet has a copy-paste error and at least one of them
+ * leads somewhere wrong. Reported rather than resolved, because there is no
+ * way to tell from here which one is correct.
+ */
+function findSharedUrls(creators: ParsedCreator[]): { url: string; creators: string[] }[] {
+  const byUrl = new Map<string, Set<string>>();
+  for (const creator of creators) {
+    for (const account of creator.accounts) {
+      const bucket = byUrl.get(account.profileUrl) ?? new Set<string>();
+      bucket.add(creator.displayName);
+      byUrl.set(account.profileUrl, bucket);
+    }
+  }
+
+  return [...byUrl.entries()]
+    .filter(([, names]) => names.size > 1)
+    .map(([url, names]) => ({ url, creators: [...names].sort() }))
+    .sort((a, b) => a.url.localeCompare(b.url));
+}
+
 export function transformRows(rows: SourceRow[]): TransformResult {
   const failures: ParseFailure[] = [];
   const blankRows: number[] = [];
@@ -150,6 +183,19 @@ export function transformRows(rows: SourceRow[]): TransformResult {
   rows.forEach((row, index) => {
     const rowNumber = index + 2;
     const displayName = cleanCell(row["Name"]);
+
+    // A repaired name is worth recording: it means the export was encoded
+    // wrongly, and whoever maintains the sheet may want to fix it at source.
+    const rawName = String(row["Name"] ?? "")
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+    if (rawName && rawName !== displayName) {
+      notes.push(
+        `Row ${rowNumber}: the name was written as UTF-8 and read back as Windows-1252 ` +
+          `on export. Repaired ${JSON.stringify(rawName)} to ` +
+          `${JSON.stringify(displayName)}.`,
+      );
+    }
 
     if (!displayName) {
       // The source sheets use fully blank rows as visual separators between
@@ -287,6 +333,19 @@ export function transformRows(rows: SourceRow[]): TransformResult {
           (value): value is number => value !== null,
         );
 
+        // One account per platform means the losing row's URL is dropped. That
+        // is the right shape for the data, but it is a real loss and has to be
+        // visible: the discarded link may be the only record of it anywhere.
+        const discarded = preferred === existing ? account : existing;
+        if (discarded.profileUrl !== preferred.profileUrl) {
+          notes.push(
+            `Merging into "${displayName}" kept one ${discarded.platform} URL and ` +
+              `dropped another, because a creator holds one account per platform. ` +
+              `Kept ${preferred.profileUrl} (row ${preferred.sourceRow}), dropped ` +
+              `${discarded.profileUrl} (row ${discarded.sourceRow}).`,
+          );
+        }
+
         byPlatform.set(account.platform, {
           ...preferred,
           followers: followers.length ? Math.max(...followers) : null,
@@ -329,6 +388,7 @@ export function transformRows(rows: SourceRow[]): TransformResult {
     droppedColumns: ALWAYS_DROPPED_COLUMNS.filter((column) => columns.includes(column)),
     unresolvedHandles,
     blankRows,
+    sharedUrls: findSharedUrls(creators),
     notes,
     sourceRowCount: rows.length,
   };
