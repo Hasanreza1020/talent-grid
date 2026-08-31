@@ -48,16 +48,42 @@ Everything after that is done through `/admin/users`.
 Two routes into the same code. The command line, which writes a full report:
 
 ```bash
-pnpm import:csv -- --file scripts/data/Influencer_Database_-_Travel.csv --category Travel
+pnpm import:csv -- --file scripts/data/Influencer_Database_-_Travel.tsv --category Travel
 # dry run by default; add --commit to write
 ```
+
+Comma- and tab-separated files both work. The delimiter is detected from the
+header line rather than from the file extension, because a file named `.csv`
+that is actually tab-separated is a normal thing to receive and parsing it as
+one giant column is the worst available failure. Fully blank rows are treated
+as the visual separators they are and skipped; a row carrying data but no name
+is reported.
 
 Or `/admin/import` in the app, which previews the parse, shows every value that
 failed and every suspected duplicate, and lets a human accept or reject each
 merge before anything is written.
 
-The last report generated is at
+The last report is at
 [`scripts/output/import-report.md`](scripts/output/import-report.md).
+
+## Importing portraits
+
+```bash
+pnpm import:portraits -- --dir "C:\Users\Hasan\Downloads\Influencer Database\Travel"
+# dry run by default; add --commit to upload
+```
+
+One folder of images per category, named after the creator. Filenames do not
+match the sheet exactly (`bd traveller.jpg` against `Bd travellers`,
+`Mr. Mixer_s World.jpg` against `Mr. Mixer's World`), so matching reuses the
+same normalisation and similarity as the duplicate matcher, with a confidence
+threshold. Anything below it is reported rather than attached: putting the
+wrong face on a creator is worse than leaving the tile blank.
+
+Images are centre-cropped to 4:5, resized to 1000x1250 and stored as WebP **in
+colour**. The black-and-white treatment is a render-time CSS filter and is
+never baked into the stored file. The report is at
+[`scripts/output/portrait-report.md`](scripts/output/portrait-report.md).
 
 ## Checking your work
 
@@ -113,13 +139,19 @@ something has gone wrong.
 
 ## Known gaps
 
-- **Portraits.** Every creator currently renders as a stone tile with their
-  initials, because no images have been supplied. The admin edit page has an
-  upload with a 4:5 crop ready for them.
+- **One creator has no portrait.** Kawser Ahmed Abid, because the Travel image
+  folder has no file for him. He renders as a stone tile with his initials,
+  which is the designed fallback, not a broken state.
+- **`The Foodieveller.jpg` is unused.** It sits in the Travel image folder but
+  matches no creator on the Travel sheet (38% to the nearest name), so it was
+  left alone rather than attached to someone.
 - **Handles for 14 accounts.** The source spreadsheet holds Facebook share
   links and YouTube video links where profile URLs were expected. A post id is
   not a handle, so those are stored as null and listed in the import report.
   Replacing them with real profile URLs is the highest-value cleanup available.
+- **Only Travel is loaded.** The image folders also hold Beauty, Food,
+  Lifestyle and Sports. Each needs its own sheet before its portraits can be
+  matched to anything.
 - **No engagement data at all.** The spreadsheets carry follower counts and
   nothing else, so engagement rate, cost per engagement, growth and the agency
   score are null for every imported creator until someone records views, likes

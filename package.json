@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "import:csv": "tsx scripts/import-csv.ts",
     "verify:db": "bash scripts/verify/run.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "import:portraits": "tsx scripts/import-portraits.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
