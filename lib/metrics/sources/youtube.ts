@@ -211,21 +211,21 @@ export class YouTubeMetricSource implements MetricSource {
       return snippet?.channelId ?? null;
     }
 
-    if (lookup.kind === "handle") {
-      const result = await this.get("channels", {
-        part: "id",
-        forHandle: `@${lookup.value}`,
-      });
+    // A name from a /c/ path is usually also the @handle, and an @handle is
+    // occasionally only a legacy username, so both forms are tried either way.
+    // The likelier one for this lookup kind goes first; each costs one unit.
+    const attempts: Record<string, string>[] =
+      lookup.kind === "username"
+        ? [{ forUsername: lookup.value }, { forHandle: `@${lookup.value}` }]
+        : [{ forHandle: `@${lookup.value}` }, { forUsername: lookup.value }];
+
+    for (const params of attempts) {
+      const result = await this.get("channels", { part: "id", ...params });
       const id = (result.items?.[0] as { id?: string })?.id;
       if (id) return id;
-      // Fall through to the legacy username form.
     }
 
-    const legacy = await this.get("channels", {
-      part: "id",
-      forUsername: lookup.value,
-    });
-    return (legacy.items?.[0] as { id?: string })?.id ?? null;
+    return null;
   }
 
   async fetchMetrics(account: MetricSourceAccount): Promise<FetchedMetrics | null> {
