@@ -5,6 +5,11 @@ import { initialsOf } from "@/lib/format";
 /**
  * The one place in the product where visual boldness is spent.
  *
+ * The photograph is left unobstructed. Nothing is laid over it at rest, so a
+ * grid of these reads as a wall of faces rather than a wall of darkened
+ * thumbnails. The only overlay is a warm glow along the bottom edge on hover,
+ * which marks the card you are pointing at without hiding the face.
+ *
  * Grayscale is a render-time CSS filter and is never baked into the stored
  * file; originals stay in colour in Supabase Storage. When there is no
  * portrait, the fallback is a stone tile carrying the creator's initials in
@@ -13,7 +18,6 @@ import { initialsOf } from "@/lib/format";
 export function Portrait({
   name,
   src,
-  handle,
   sizes = "(min-width: 1280px) 400px, (min-width: 768px) 45vw, 90vw",
   priority = false,
   className,
@@ -21,11 +25,10 @@ export function Portrait({
 }: {
   name: string;
   src?: string | null;
-  handle?: string | null;
   sizes?: string;
   priority?: boolean;
   className?: string;
-  /** Scrim contents, typically category chips. */
+  /** Chips laid over the lower edge of the image. */
   children?: React.ReactNode;
 }) {
   return (
@@ -56,27 +59,16 @@ export function Portrait({
         </div>
       )}
 
-      {/*
-        The scrim keeps both the handle badge and the chips legible over any
-        photograph. Both belong at the bottom left, so they stack rather than
-        overlap: badge above, chips below.
-      */}
-      {handle || children ? (
-        <div className="portrait-scrim absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 p-3">
-          {handle ? (
-            <span
-              className={cn(
-                "rounded-full bg-brand px-2.5 py-1 text-xs text-white",
-                "opacity-0 transition-opacity duration-200",
-                "group-hover:opacity-100 group-focus-within:opacity-100",
-              )}
-            >
-              @{handle}
-            </span>
-          ) : null}
-          {children ? (
-            <div className="flex flex-wrap items-center gap-1.5">{children}</div>
-          ) : null}
+      {/* The hover marker: a warm wash rising from the bottom edge. Absent at
+          rest, so the image is never dimmed just to sit in a grid. */}
+      <div
+        aria-hidden
+        className="portrait-glow pointer-events-none absolute inset-x-0 bottom-0 h-2/5 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+      />
+
+      {children ? (
+        <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-1.5 p-3">
+          {children}
         </div>
       ) : null}
     </div>

@@ -111,7 +111,6 @@ export default async function CreatorDetailPage({
         <Portrait
           name={creator.displayName}
           src={creator.portraitUrl}
-          handle={creator.primaryHandle}
           priority
           sizes="340px"
         />

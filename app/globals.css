@@ -172,12 +172,17 @@
   .group:hover .portrait-media {
     filter: grayscale(0) contrast(1);
   }
-  .portrait-scrim {
+  /*
+    The hover marker on a portrait. Warm rather than black, and only present
+    while pointed at, so nothing is laid over a face at rest. It stops well
+    short of opaque: this marks the card, it does not tint the photograph.
+  */
+  .portrait-glow {
     background: linear-gradient(
       to top,
-      rgb(0 0 0 / 0.55) 0%,
-      rgb(0 0 0 / 0.25) 32%,
-      transparent 62%
+      rgb(255 77 13 / 0.72) 0%,
+      rgb(255 77 13 / 0.32) 45%,
+      transparent 100%
     );
   }
 }

@@ -3,10 +3,12 @@ import { NO_DATA } from "@/lib/format";
 import type { MetricResult } from "@/lib/metrics/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-/** Category chip shown over the portrait scrim. */
+/** Category chip laid over the lower edge of a portrait. */
 export function ScrimChip({ children }: { children: React.ReactNode }) {
+  // No gradient sits behind these any more, so the pill has to carry its own
+  // legibility over whatever part of the photograph it lands on.
   return (
-    <span className="rounded-full bg-black/45 px-2 py-0.5 text-xs text-white backdrop-blur-[2px]">
+    <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur-[2px]">
       {children}
     </span>
   );
