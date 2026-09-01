@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { creatorFormSchema, type CreatorFormValues } from "@/lib/schemas";
-import { saveCreator } from "@/app/(app)/admin/actions";
+import { saveCreator } from "@/app/admin/actions";
 import { profileUrlFor } from "@/lib/handles";
 import {
   CONTACT_TYPES,

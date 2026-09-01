@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
-import { setPortraitUrl } from "@/app/(app)/admin/actions";
+import { setPortraitUrl } from "@/app/admin/actions";
 import { initialsOf } from "@/lib/format";
 
 const ASPECT = 4 / 5;

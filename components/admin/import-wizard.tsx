@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Notice, SectionHeading } from "@/components/ui-bits";
-import { commitImport, previewImport } from "@/app/(app)/admin/import/actions";
+import { commitImport, previewImport } from "@/app/admin/import/actions";
 import { PLATFORM_COLUMNS, type TransformResult } from "@/lib/import/transform";
 import { formatNumber, NO_DATA } from "@/lib/format";
 import { PLATFORM_LABEL } from "@/lib/types";

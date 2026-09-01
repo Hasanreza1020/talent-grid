@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { archiveCreator } from "@/app/(app)/admin/actions";
+import { archiveCreator } from "@/app/admin/actions";
 
 /**
  * Archiving sets deleted_at. Nothing in the product hard-deletes a creator,

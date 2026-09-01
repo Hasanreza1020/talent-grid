@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { setUserRole } from "@/app/(app)/admin/actions";
+import { setUserRole } from "@/app/admin/actions";
 import { USER_ROLES, USER_ROLE_LABEL, type AppUser } from "@/lib/types";
 
 export function UserTable({

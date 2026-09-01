@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SectionHeading } from "@/components/ui-bits";
-import { createCategory, createTag } from "@/app/(app)/admin/actions";
+import { createCategory, createTag } from "@/app/admin/actions";
 import { formatNumber } from "@/lib/format";
 
 type CategoryRow = {

@@ -19,7 +19,6 @@ export function CreatorCard({ data }: { data: CardData }) {
         <Portrait
           name={data.displayName}
           src={data.portraitUrl}
-          handle={data.primaryHandle}
           sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, 90vw"
         >
           {data.primaryCategoryName ? (
@@ -47,23 +46,31 @@ export function CreatorCard({ data }: { data: CardData }) {
           <Link href={`/creators/${data.slug}`}>{data.displayName}</Link>
         </h3>
 
-        {/* Followers per platform. The icon carries the platform so the number
-            keeps the serif and stays the thing you read. */}
+        {/* The handle is part of the record, not a hover reveal: it is how the
+            team refers to a creator out loud and in a client email. */}
+        <p className="mt-0.5 truncate text-sm text-ink-muted">
+          {data.primaryHandle ? `@${data.primaryHandle}` : "Handle not on file"}
+        </p>
+
+        {/* One row, one column per platform. The mark identifies the platform
+            so the number keeps the serif and stays what you read. */}
         {data.accounts.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-muted">No accounts on file</p>
+          <p className="mt-3 border-t border-hairline pt-3 text-sm text-ink-muted">
+            No accounts on file
+          </p>
         ) : (
-          <dl className="mt-2 space-y-1">
+          <dl className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3 border-t border-hairline pt-3">
             {data.accounts.map((account) => (
-              <div key={account.platform} className="flex items-center gap-2 text-sm">
-                <dt className="flex items-center gap-1.5 text-ink-muted">
-                  <PlatformIcon platform={account.platform} />
+              <div key={account.platform} className="flex items-center gap-2">
+                <dt className="text-ink-muted">
+                  <PlatformIcon platform={account.platform} className="size-5" />
                   <span className="sr-only">{account.platformLabel}</span>
                 </dt>
                 <dd
                   className={
                     account.followers === null
                       ? "text-xs text-ink-muted"
-                      : "numeral text-ink"
+                      : "numeral text-base leading-none text-ink"
                   }
                 >
                   {account.followers === null ? NO_DATA : formatCompact(account.followers)}
@@ -74,7 +81,7 @@ export function CreatorCard({ data }: { data: CardData }) {
         )}
 
         {data.engagementRate !== null ? (
-          <p className="mt-2 border-t border-hairline pt-2 text-xs text-ink-muted">
+          <p className="mt-3 text-xs text-ink-muted">
             {data.engagementLabel}{" "}
             <span className="numeral text-sm text-ink">
               {data.engagementRate.toFixed(2)}%

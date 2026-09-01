@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui-bits";
-import { addSnapshot } from "@/app/(app)/admin/actions";
+import { addSnapshot } from "@/app/admin/actions";
 import { formatDate } from "@/lib/format";
 import { SNAPSHOT_SOURCES } from "@/lib/types";
 

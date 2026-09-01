@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail, listDirectory } from "@/lib/db/creators";
 import { listShortlists } from "@/lib/db/shortlists";
@@ -14,7 +13,6 @@ import { PlatformTabs } from "@/components/creator/platform-tabs";
 import { AudienceBlock } from "@/components/creator/audience-block";
 import { CompareToggleButton } from "@/components/compare/compare-toggle-button";
 import { AddToShortlist } from "@/components/shortlist/add-to-shortlist";
-import { Button } from "@/components/ui/button";
 import {
   DATA_CONFIDENCE_LABEL,
   DELIVERABLE_LABEL,
@@ -175,11 +173,6 @@ export default async function CreatorDetailPage({
               }))}
             />
             <CompareToggleButton slug={creator.slug} displayName={creator.displayName} />
-            {canEdit ? (
-              <Button asChild variant="outline">
-                <Link href={`/admin/creators/${creator.id}/edit`}>Edit</Link>
-              </Button>
-            ) : null}
           </div>
         </div>
       </div>
@@ -323,8 +316,6 @@ export default async function CreatorDetailPage({
             label: PLATFORM_LABEL[account.platform],
             profile: creator.audienceByAccount[account.id] ?? null,
           }))}
-          canEdit={canEdit}
-          creatorId={creator.id}
         />
       </section>
 
@@ -334,14 +325,9 @@ export default async function CreatorDetailPage({
         {!canEdit ? (
           <EmptyState>Rates are visible to editors and admins.</EmptyState>
         ) : creator.rateCards.length === 0 ? (
-          <EmptyState
-            action={
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/admin/creators/${creator.id}/edit?step=rates`}>Add a rate</Link>
-              </Button>
-            }
-          >
-            No rate card on file. Nothing has been assumed in its place.
+          <EmptyState>
+            No rate card on file. Nothing has been assumed in its place. Rates are
+            entered in the CMS.
           </EmptyState>
         ) : (
           <div className="overflow-x-auto">

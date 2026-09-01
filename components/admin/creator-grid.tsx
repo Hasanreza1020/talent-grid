@@ -35,7 +35,7 @@ import {
   bulkAssignCategory,
   bulkSetStatus,
   updateInlineField,
-} from "@/app/(app)/admin/actions";
+} from "@/app/admin/actions";
 import { formatCompact, formatDate, NO_DATA } from "@/lib/format";
 import {
   CREATOR_STATUSES,

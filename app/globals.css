@@ -182,6 +182,39 @@
   }
 }
 
+@layer components {
+  /*
+    The hero wall. The track holds the tile list twice over, so translating by
+    exactly half its width lands on an identical frame and the loop is
+    invisible. Duration is set per row inline, which is what gives the two rows
+    their different speeds.
+  */
+  @keyframes portrait-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .portrait-marquee {
+    animation-name: portrait-marquee;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
+  }
+
+  .portrait-marquee--reverse {
+    animation-direction: reverse;
+  }
+
+  /* Pausing on hover makes a moving tile possible to actually click. */
+  .portrait-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

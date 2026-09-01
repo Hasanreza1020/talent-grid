@@ -110,7 +110,11 @@ export default async function HomePage() {
           creators={[...rows]
             .sort((a, b) => Number(b.portraitUrl !== null) - Number(a.portraitUrl !== null))
             .slice(0, 20)
-            .map((row) => ({ name: row.displayName, portraitUrl: row.portraitUrl }))}
+            .map((row) => ({
+              slug: row.slug,
+              name: row.displayName,
+              portraitUrl: row.portraitUrl,
+            }))}
         />
         <div className="relative mx-auto max-w-[46rem] px-6 py-24 text-center sm:py-32">
           <h1 className="font-display text-2xl leading-[1.05] text-ink sm:text-3xl">
@@ -144,18 +148,21 @@ export default async function HomePage() {
               No creators are filed under a category yet.
             </p>
           ) : (
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {populatedCategories.map((category) => (
                 <li key={category.id}>
                   <Link
                     href={`/creators?category=${category.slug}`}
-                    className="flex items-center gap-3 rounded-lg border border-hairline bg-surface px-3 py-3 transition-colors hover:border-ink/25"
+                    className="group flex h-full flex-col justify-between gap-6 rounded-xl border border-hairline bg-surface p-5 transition-colors hover:border-ink/25"
                   >
-                    <CategoryIcon slug={category.slug} className="text-ink-muted" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm">{category.name}</span>
-                      <span className="numeral block text-xs text-ink-muted">
-                        {formatNumber(category.creatorCount)}
+                    <CategoryIcon
+                      slug={category.slug}
+                      className="size-8 text-ink-muted transition-colors group-hover:text-ink"
+                    />
+                    <span>
+                      <span className="block text-lg leading-tight">{category.name}</span>
+                      <span className="numeral mt-1 block text-sm text-ink-muted">
+                        {formatNumber(category.creatorCount)} creators
                       </span>
                     </span>
                   </Link>

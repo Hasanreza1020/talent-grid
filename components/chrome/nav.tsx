@@ -17,9 +17,9 @@ const LINKS = [
 
 export function Nav({ user }: { user: AppUser }) {
   const pathname = usePathname();
-  const canEdit = user.role === "admin" || user.role === "editor";
-
-  const links = canEdit ? [...LINKS, { href: "/admin", label: "Admin" }] : LINKS;
+  // The CMS is deliberately absent from the product nav. It is a separate
+  // tool at /admin with its own shell, not a tab of the browse experience.
+  const links = LINKS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">

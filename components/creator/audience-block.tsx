@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { AgeBracketChart } from "@/components/charts";
 import { EmptyState } from "@/components/ui-bits";
@@ -10,29 +9,15 @@ import type { AudienceProfile } from "@/lib/types";
 
 export function AudienceBlock({
   accounts,
-  canEdit,
-  creatorId,
 }: {
   accounts: { id: string; label: string; profile: AudienceProfile | null }[];
-  canEdit: boolean;
-  creatorId: string;
 }) {
   const withProfiles = accounts.filter((account) => account.profile !== null);
   const [selected, setSelected] = useState(withProfiles[0]?.id ?? null);
 
   if (withProfiles.length === 0) {
     return (
-      <EmptyState
-        action={
-          canEdit ? (
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/admin/creators/${creatorId}/edit?step=metrics`}>
-                Add audience data
-              </Link>
-            </Button>
-          ) : undefined
-        }
-      >
+      <EmptyState>
         No audience data has been recorded for this creator. Age, gender and city splits
         come from a media kit or the platform&rsquo;s own analytics.
       </EmptyState>
