@@ -85,6 +85,44 @@ colour**. The black-and-white treatment is a render-time CSS filter and is
 never baked into the stored file. The report is at
 [`scripts/output/portrait-report.md`](scripts/output/portrait-report.md).
 
+## Refreshing metrics from a platform API
+
+```bash
+pnpm refresh:metrics -- --platform youtube
+# dry run by default; add --commit to write
+```
+
+Needs `YOUTUBE_API_KEY` in `.env.local`: a Google Cloud project with the
+**YouTube Data API v3** enabled, and an API key. No approval process, and the
+free quota of 10,000 units a day is roughly 250 times what a full refresh of
+this database costs.
+
+Every refresh writes a **new dated snapshot**. Nothing is overwritten, so each
+run adds to the follower history that the growth and trend figures read from.
+Running twice in one day is a no-op rather than a duplicate.
+
+The adapter also backfills handles: an account imported with nothing but a
+`youtu.be/...` link is resolved video → channel → handle, and the real profile
+URL is written back.
+
+**Only YouTube is implemented, and that is not an oversight:**
+
+| Platform | Status |
+| --- | --- |
+| YouTube | Works. Public API, any channel. |
+| Instagram | Possible via Business Discovery, for Business/Creator accounts only. Needs a reviewed Meta app. |
+| Facebook | Needs Page Public Content Access: App Review plus Business Verification. |
+| TikTok | No route. The Research API excludes commercial users, and the Display API needs each creator to authorise the app. |
+
+Adding one is a single new file implementing `MetricSource` in
+`lib/metrics/sources/`, registered in `lib/metrics/source.ts`. Nothing else
+changes: no page, component or query reads metric data through anything but the
+adapter.
+
+What YouTube will not give you, and is therefore left null rather than guessed:
+average **shares** (no such metric exists in the API), exact subscriber counts
+(YouTube rounds them publicly), and anything a channel has hidden.
+
 ## Checking your work
 
 ```bash

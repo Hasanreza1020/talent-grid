@@ -75,6 +75,16 @@ export function listMetricSources(): MetricSource[] {
 
 registerMetricSource(new ManualMetricSource());
 
+// The YouTube adapter registers itself only when a key is configured, so the
+// product behaves identically with the key absent: every metric falls back to
+// what a person recorded by hand.
+if (typeof process !== "undefined" && process.env?.YOUTUBE_API_KEY) {
+  // Imported lazily so the browser bundle never pulls in the adapter.
+  void import("./sources/youtube").then(({ YouTubeMetricSource }) => {
+    registerMetricSource(new YouTubeMetricSource(process.env.YOUTUBE_API_KEY!));
+  });
+}
+
 /**
  * Runs every registered source over an account and returns the first result.
  * Used by the refresh path in the admin UI; with only the manual source

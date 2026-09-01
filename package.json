@@ -12,7 +12,8 @@
     "import:csv": "tsx scripts/import-csv.ts",
     "verify:db": "bash scripts/verify/run.sh",
     "typecheck": "tsc --noEmit",
-    "import:portraits": "tsx scripts/import-portraits.ts"
+    "import:portraits": "tsx scripts/import-portraits.ts",
+    "refresh:metrics": "tsx scripts/refresh-metrics.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
