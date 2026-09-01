@@ -20,6 +20,7 @@
  */
 
 import type {
+  FetchDetail,
   FetchedMetrics,
   MetricSource,
   MetricSourceAccount,
@@ -165,10 +166,9 @@ function optionalCount(value: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export type YouTubeFetchDetail = {
+/** The shared report fields, plus what is specific to a YouTube channel. */
+export type YouTubeFetchDetail = FetchDetail & {
   channelId: string;
-  channelTitle: string;
-  resolvedHandle: string | null;
   summary: VideoSummary;
   subscribersHidden: boolean;
 };
@@ -302,8 +302,11 @@ export class YouTubeMetricSource implements MetricSource {
 
     this.lastDetail = {
       channelId,
-      channelTitle: channel.snippet?.title ?? channelId,
+      title: channel.snippet?.title ?? channelId,
       resolvedHandle: channel.snippet?.customUrl?.replace(/^@/, "") ?? null,
+      summaryLine:
+        `${summary.sampled} recent uploads sampled ` +
+        `(${summary.shorts} Shorts, ${summary.longForm} long form)`,
       summary,
       subscribersHidden: Boolean(channel.statistics?.hiddenSubscriberCount),
     };

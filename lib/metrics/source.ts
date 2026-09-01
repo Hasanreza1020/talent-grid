@@ -32,6 +32,22 @@ export type FetchedMetrics = {
   source: SnapshotSource;
 };
 
+/**
+ * What an adapter learned while fetching, beyond the numbers themselves. The
+ * refresh report is only useful if it can say what was sampled and why a
+ * figure is missing, and that has to be the same shape for every platform.
+ */
+export type FetchDetail = {
+  /** A handle the API knows but the imported row did not, for backfilling. */
+  resolvedHandle: string | null;
+  /** The channel or page name as the platform holds it. */
+  title: string | null;
+  /** One line for the report describing what was sampled. */
+  summaryLine: string;
+  /** Set when engagement specifically could not be read, with the reason. */
+  engagementReason?: string | null;
+};
+
 export interface MetricSource {
   /** Identifies the adapter in the snapshot record and in the UI. */
   readonly key: string;

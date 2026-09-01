@@ -18,11 +18,20 @@ import { dirname, resolve } from "node:path";
 
 import { createWriteClient } from "./supabase-admin";
 import { YouTubeMetricSource } from "../lib/metrics/sources/youtube";
+import { FacebookMetricSource } from "../lib/metrics/sources/facebook";
 import { profileUrlFor } from "../lib/handles";
 import { formatCompact } from "../lib/format";
-import type { FetchedMetrics } from "../lib/metrics/source";
+import type { FetchDetail, FetchedMetrics, MetricSource } from "../lib/metrics/source";
 
-type Args = { platform: "youtube"; commit: boolean; reportPath: string; limit: number | null };
+const SUPPORTED = ["youtube", "facebook"] as const;
+type SupportedPlatform = (typeof SUPPORTED)[number];
+
+type Args = {
+  platform: SupportedPlatform;
+  commit: boolean;
+  reportPath: string;
+  limit: number | null;
+};
 
 function parseArgs(argv: string[]): Args {
   const get = (name: string) => {
@@ -31,35 +40,47 @@ function parseArgs(argv: string[]): Args {
   };
 
   const platform = get("platform") ?? "youtube";
-  if (platform !== "youtube") {
+  if (!(SUPPORTED as readonly string[]).includes(platform)) {
     console.error(
-      `Only youtube is implemented. TikTok has no API open to a commercial ` +
-        `agency, and Facebook and Instagram need a reviewed Meta app.`,
+      `Unknown platform "${platform}". Implemented: ${SUPPORTED.join(", ")}. ` +
+        `TikTok has no API open to a commercial agency, and Instagram needs a ` +
+        `reviewed Meta app plus a linked Business account.`,
     );
     process.exit(1);
   }
 
   const limit = get("limit");
   return {
-    platform,
+    platform: platform as SupportedPlatform,
     commit: argv.includes("--commit"),
     reportPath: resolve(get("report") ?? "scripts/output/metric-refresh-report.md"),
     limit: limit ? Number(limit) : null,
   };
 }
 
-type Outcome = {
-  creator: string;
-  handle: string | null;
-  status: "ok" | "skipped" | "failed";
-  detail: string;
-  metrics?: FetchedMetrics;
-  resolvedHandle?: string | null;
-  channelTitle?: string;
+/** The adapter for a platform, plus the label the report prints. */
+type Adapter = {
+  source: MetricSource & { lastError: string | null; lastDetail: FetchDetail | null };
+  label: string;
 };
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+function buildAdapter(platform: SupportedPlatform): Adapter {
+  if (platform === "facebook") {
+    const token = process.env.FACEBOOK_ACCESS_TOKEN;
+    if (!token) {
+      console.error(
+        "Missing FACEBOOK_ACCESS_TOKEN. Create a Meta app, add the Facebook " +
+          "Login or Business product, and generate a long-lived token. Reading " +
+          "Pages the agency does not administer additionally needs Page Public " +
+          "Content Access, granted through App Review and Business Verification.",
+      );
+      process.exit(1);
+    }
+    return {
+      source: new FacebookMetricSource(token, process.env.FACEBOOK_API_VERSION),
+      label: "Facebook Graph API",
+    };
+  }
 
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -69,14 +90,30 @@ async function main() {
     );
     process.exit(1);
   }
+  return { source: new YouTubeMetricSource(apiKey), label: "YouTube Data API v3" };
+}
 
+type Outcome = {
+  creator: string;
+  handle: string | null;
+  status: "ok" | "skipped" | "failed";
+  detail: string;
+  metrics?: FetchedMetrics;
+  resolvedHandle?: string | null;
+  title?: string | null;
+  engagementReason?: string | null;
+};
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  const { source, label } = buildAdapter(args.platform);
   const supabase = await createWriteClient();
-  const source = new YouTubeMetricSource(apiKey);
 
   let query = supabase
     .from("accounts")
     .select("id, platform, handle, profile_url, creators(display_name, deleted_at)")
-    .eq("platform", "youtube");
+    .eq("platform", args.platform);
   if (args.limit) query = query.limit(args.limit);
 
   const { data: accounts, error } = await query;
@@ -98,7 +135,7 @@ async function main() {
     try {
       const metrics = await source.fetchMetrics({
         id: account.id,
-        platform: "youtube",
+        platform: args.platform,
         handle: account.handle,
         profileUrl: account.profile_url,
       });
@@ -149,7 +186,7 @@ async function main() {
             .from("accounts")
             .update({
               handle: detail.resolvedHandle,
-              profile_url: profileUrlFor("youtube", detail.resolvedHandle),
+              profile_url: profileUrlFor(args.platform, detail.resolvedHandle),
             })
             .eq("id", account.id);
           if (!handleError) handlesBackfilled += 1;
@@ -160,13 +197,11 @@ async function main() {
         creator: name,
         handle: account.handle,
         status: "ok",
-        detail: detail
-          ? `${detail.summary.sampled} recent uploads sampled ` +
-            `(${detail.summary.shorts} Shorts, ${detail.summary.longForm} long form)`
-          : "",
+        detail: detail?.summaryLine ?? "",
         metrics,
         resolvedHandle: detail?.resolvedHandle ?? null,
-        channelTitle: detail?.channelTitle,
+        title: detail?.title ?? null,
+        engagementReason: detail?.engagementReason ?? null,
       });
     } catch (failure) {
       outcomes.push({
@@ -187,7 +222,7 @@ async function main() {
   const lines: string[] = [];
   lines.push("# Metric refresh report");
   lines.push("");
-  lines.push(`- Platform: YouTube Data API v3`);
+  lines.push(`- Platform: ${label}`);
   lines.push(`- Run at: ${new Date().toISOString()}`);
   lines.push(`- Mode: ${args.commit ? "committed" : "dry run, nothing written"}`);
   lines.push("");
@@ -211,7 +246,7 @@ async function main() {
     const m = entry.metrics!;
     const cell = (value: number | null) => (value === null ? "No data" : formatCompact(value));
     lines.push(
-      `| ${entry.creator} | ${entry.channelTitle ?? ""} | ${cell(m.followers)} | ` +
+      `| ${entry.creator} | ${entry.title ?? ""} | ${cell(m.followers)} | ` +
         `${cell(m.avgViews)} | ${cell(m.avgLikes)} | ${cell(m.avgComments)} | ` +
         `${m.postsLast30d === null ? "No data" : m.postsLast30d} | ${entry.detail} |`,
     );
