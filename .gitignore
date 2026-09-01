@@ -48,3 +48,6 @@ supabase/.temp/
 supabase/.branches/
 
 .vercel
+
+# logs
+*.log
