@@ -6,8 +6,13 @@
  */
 
 import { parseFollowerCount } from "../parse-followers";
-import { detectPlatform, extractHandle } from "../handles";
-import { findDuplicateGroups, type DedupCandidate, type DedupGroup } from "../dedup";
+import { detectPlatform, extractHandle, unwrapLinkShim } from "../handles";
+import {
+  findDuplicateGroups,
+  type DedupCandidate,
+  type DedupGroup,
+  type NameConflict,
+} from "../dedup";
 import { uniqueSlug } from "../slug";
 import { repairMojibake } from "./mojibake";
 import type { Platform } from "../types";
@@ -90,6 +95,11 @@ export type TransformResult = {
    * copy-paste slip in the sheet, and it means at least one of them is wrong.
    */
   sharedUrls: { url: string; creators: string[] }[];
+  /**
+   * Rows sharing a name that belong to different people, kept apart on the
+   * evidence of their handles.
+   */
+  nameConflicts: NameConflict[];
   notes: string[];
   sourceRowCount: number;
 };
@@ -201,7 +211,11 @@ export function transformRows(rows: SourceRow[]): TransformResult {
       // The source sheets use fully blank rows as visual separators between
       // groups of creators. Those are skipped silently; a row that carries
       // data but no name is a genuine problem and is reported.
-      const hasAnyValue = Object.values(row).some((value) => cleanCell(value) !== "");
+      // Category is routinely pre-filled all the way down a column, so a row
+      // holding only that is still an empty row, not a row missing its name.
+      const hasAnyValue = Object.entries(row).some(
+        ([column, value]) => column !== "Category" && cleanCell(value) !== "",
+      );
       if (hasAnyValue) {
         failures.push({
           rowNumber,
@@ -219,7 +233,9 @@ export function transformRows(rows: SourceRow[]): TransformResult {
     const accounts: ParsedAccount[] = [];
 
     for (const { platform, urlColumn, followerColumn } of PLATFORM_COLUMNS) {
-      const rawUrl = cleanCell(row[urlColumn]);
+      // Unwrapped first: a shimmed TikTok link would otherwise be read as
+      // an Instagram account and file the followers under the wrong platform.
+      const rawUrl = unwrapLinkShim(cleanCell(row[urlColumn]));
       const rawFollowers = cleanCell(row[followerColumn]);
       if (!rawUrl && !rawFollowers) continue;
 
@@ -293,7 +309,7 @@ export function transformRows(rows: SourceRow[]): TransformResult {
       .map((account) => ({ platform: account.platform, handle: account.handle })),
   }));
 
-  const groups: DedupGroup[] = findDuplicateGroups(candidates);
+  const { groups, conflicts } = findDuplicateGroups(candidates);
   const groupByRow = new Map<number, DedupGroup>();
   for (const group of groups) {
     for (const rowNumber of group.rowNumbers) groupByRow.set(rowNumber, group);
@@ -389,6 +405,7 @@ export function transformRows(rows: SourceRow[]): TransformResult {
     unresolvedHandles,
     blankRows,
     sharedUrls: findSharedUrls(creators),
+    nameConflicts: conflicts,
     notes,
     sourceRowCount: rows.length,
   };

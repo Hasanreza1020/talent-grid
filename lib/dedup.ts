@@ -29,6 +29,35 @@ export type MatchLink = {
   reasoning: string;
 };
 
+/**
+ * Two rows that share a name but demonstrably belong to different people.
+ * Reported rather than merged, so the sheet owner can confirm.
+ */
+export type NameConflict = {
+  rows: [number, number];
+  name: string;
+  platform: Platform;
+  handles: [string, string];
+};
+
+/**
+ * The first platform on which both rows carry a handle and those handles
+ * differ. Null when they never overlap or always agree.
+ */
+function conflictingHandle(
+  a: DedupCandidate,
+  b: DedupCandidate,
+): { platform: Platform; handles: [string, string] } | null {
+  for (const left of a.handles) {
+    const right = b.handles.find((entry) => entry.platform === left.platform);
+    if (!right) continue;
+    if (normaliseHandle(left.handle) !== normaliseHandle(right.handle)) {
+      return { platform: left.platform, handles: [left.handle, right.handle] };
+    }
+  }
+  return null;
+}
+
 export type DedupGroup = {
   rowNumbers: number[];
   links: MatchLink[];
@@ -102,8 +131,9 @@ class UnionFind {
 export function findDuplicateGroups(
   candidates: DedupCandidate[],
   threshold: number = FUZZY_NAME_THRESHOLD,
-): DedupGroup[] {
+): { groups: DedupGroup[]; conflicts: NameConflict[] } {
   const links: MatchLink[] = [];
+  const conflicts: NameConflict[] = [];
   const union = new UnionFind();
   for (const candidate of candidates) union.find(candidate.rowNumber);
 
@@ -117,6 +147,21 @@ export function findDuplicateGroups(
       const normalisedB = normaliseName(b.displayName);
 
       if (normalisedA !== "" && normalisedA === normalisedB) {
+        // Two people can share a name. If both rows have a handle on the same
+        // platform and those handles differ, they are demonstrably different
+        // accounts, and merging on the name alone would fuse two creators into
+        // one record. The name is the weaker evidence, so the handles win.
+        const conflict = conflictingHandle(a, b);
+        if (conflict) {
+          conflicts.push({
+            rows: pair,
+            name: a.displayName,
+            platform: conflict.platform,
+            handles: conflict.handles,
+          });
+          continue;
+        }
+
         links.push({
           kind: "exact_name",
           rows: pair,
@@ -172,7 +217,7 @@ export function findDuplicateGroups(
     grouped.set(root, bucket);
   }
 
-  return [...grouped.values()]
+  const groups = [...grouped.values()]
     .filter((rowNumbers) => rowNumbers.length > 1)
     .map((rowNumbers) => ({
       rowNumbers: rowNumbers.sort((a, b) => a - b),
@@ -181,4 +226,6 @@ export function findDuplicateGroups(
       ),
     }))
     .sort((a, b) => a.rowNumbers[0] - b.rowNumbers[0]);
+
+  return { groups, conflicts };
 }

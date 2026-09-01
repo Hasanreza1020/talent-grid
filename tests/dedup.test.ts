@@ -42,7 +42,7 @@ describe("nameSimilarity", () => {
 
 describe("findDuplicateGroups", () => {
   it("groups the two Rafi rows on their identical normalised name", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       {
         rowNumber: 13,
         displayName: "Rafi The Little Traveler\r\n",
@@ -61,7 +61,7 @@ describe("findDuplicateGroups", () => {
   });
 
   it("groups the two Jannat rows even though they are cased differently", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       {
         rowNumber: 11,
         displayName: "Jannat The Lunatic Traveler",
@@ -83,7 +83,7 @@ describe("findDuplicateGroups", () => {
   });
 
   it("links rows that share a handle even when the names differ", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       {
         rowNumber: 2,
         displayName: "Some Creator",
@@ -101,7 +101,7 @@ describe("findDuplicateGroups", () => {
   });
 
   it("leaves genuinely distinct creators alone", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       { rowNumber: 2, displayName: "Travel With Naimur", handles: [] },
       { rowNumber: 3, displayName: "Travel With Naim Sheikh", handles: [] },
       { rowNumber: 4, displayName: "Travel A One", handles: [] },
@@ -113,7 +113,7 @@ describe("findDuplicateGroups", () => {
   });
 
   it("collapses a chain of three into one group", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       { rowNumber: 1, displayName: "A Creator", handles: [{ platform: "tiktok", handle: "aaa" }] },
       { rowNumber: 2, displayName: "A Creator", handles: [] },
       { rowNumber: 3, displayName: "Unrelated Person", handles: [{ platform: "youtube", handle: "aaa" }] },
@@ -124,7 +124,7 @@ describe("findDuplicateGroups", () => {
   });
 
   it("records a reason for every link so the report can show its working", () => {
-    const groups = findDuplicateGroups([
+    const { groups } = findDuplicateGroups([
       { rowNumber: 1, displayName: "Same Name", handles: [] },
       { rowNumber: 2, displayName: "same name", handles: [] },
     ]);
@@ -132,5 +132,71 @@ describe("findDuplicateGroups", () => {
     for (const link of groups[0].links) {
       expect(link.reasoning.length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe("same name, different person", () => {
+  // Two creators in the Lifestyle sheet are both called Sneha. Merging them on
+  // the name alone would fuse two real people into one record.
+  const sneha = [
+    {
+      rowNumber: 130,
+      displayName: "Sneha",
+      handles: [
+        { platform: "instagram" as const, handle: "sne.hahaaa" },
+        { platform: "tiktok" as const, handle: "sne.haha0" },
+      ],
+    },
+    {
+      rowNumber: 152,
+      displayName: "Sneha",
+      handles: [
+        { platform: "instagram" as const, handle: "tmksofficial" },
+        { platform: "tiktok" as const, handle: "tmksofficialtiktok" },
+      ],
+    },
+  ];
+
+  it("refuses to merge when handles on the same platform disagree", () => {
+    const { groups, conflicts } = findDuplicateGroups(sneha);
+    expect(groups).toHaveLength(0);
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].name).toBe("Sneha");
+    expect(conflicts[0].platform).toBe("instagram");
+  });
+
+  it("still merges a shared name when the handles agree", () => {
+    const { groups, conflicts } = findDuplicateGroups([
+      {
+        rowNumber: 1,
+        displayName: "Same Person",
+        handles: [{ platform: "instagram", handle: "same.person" }],
+      },
+      {
+        // Same handle, differently punctuated, which normalises to a match.
+        rowNumber: 2,
+        displayName: "Same Person",
+        handles: [{ platform: "instagram", handle: "same_person" }],
+      },
+    ]);
+    expect(conflicts).toHaveLength(0);
+    expect(groups).toHaveLength(1);
+  });
+
+  it("still merges a shared name when the platforms never overlap", () => {
+    const { groups, conflicts } = findDuplicateGroups([
+      {
+        rowNumber: 1,
+        displayName: "Split Record",
+        handles: [{ platform: "facebook", handle: "abc" }],
+      },
+      {
+        rowNumber: 2,
+        displayName: "Split Record",
+        handles: [{ platform: "youtube", handle: "xyz" }],
+      },
+    ]);
+    expect(conflicts).toHaveLength(0);
+    expect(groups).toHaveLength(1);
   });
 });

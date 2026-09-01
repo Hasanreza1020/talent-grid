@@ -65,7 +65,7 @@ function isContained(a: string, b: string): boolean {
 }
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".jfif", ".avif"]);
 
-type Args = { dir: string; commit: boolean; reportPath: string };
+type Args = { dir: string; commit: boolean; reportPath: string; category: string | null };
 
 function parseArgs(argv: string[]): Args {
   const get = (name: string) => {
@@ -84,6 +84,7 @@ function parseArgs(argv: string[]): Args {
     dir: resolve(dir),
     commit: argv.includes("--commit"),
     reportPath: resolve(get("report") ?? "scripts/output/portrait-report.md"),
+    category: get("category") ?? null,
   };
 }
 
@@ -104,11 +105,36 @@ async function main() {
     IMAGE_EXTENSIONS.has(extname(file).toLowerCase()),
   );
 
-  const { data: creators, error } = await supabase
+  // Scoping to one category matters once the database is large: names repeat
+  // across categories, and an unscoped match can put a Beauty creator's face
+  // on the Lifestyle creator who happens to share her first name.
+  const { data: allCreators, error } = await supabase
     .from("creators")
-    .select("id, display_name, slug, portrait_url")
+    .select(
+      "id, display_name, slug, portrait_url, creator_categories!inner(is_primary, categories(name))",
+    )
     .is("deleted_at", null);
   if (error) throw error;
+
+  const creators = (allCreators ?? []).filter((creator) => {
+    if (!args.category) return true;
+    const links = Array.isArray(creator.creator_categories)
+      ? creator.creator_categories
+      : [creator.creator_categories];
+    return links.some((link) => {
+      if (!link?.is_primary) return false;
+      const category = Array.isArray(link.categories) ? link.categories[0] : link.categories;
+      return category?.name?.toLowerCase() === args.category!.toLowerCase();
+    });
+  });
+
+  if (args.category && creators.length === 0) {
+    console.error(
+      `No creators have "${args.category}" as their primary category, so there ` +
+        `is nothing for these images to attach to. Import that category's sheet first.`,
+    );
+    process.exit(1);
+  }
 
   const matches: Match[] = [];
   const unmatchedFiles: { file: string; closest: string; similarity: number }[] = [];

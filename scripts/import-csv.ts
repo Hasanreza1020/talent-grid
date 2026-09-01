@@ -165,6 +165,30 @@ function buildReport(
   }
   lines.push("");
 
+  // Same name, different person
+  if (result.nameConflicts.length) {
+    lines.push(`## Same name, different people`);
+    lines.push("");
+    lines.push(
+      "These rows share a name but carry different handles on the same platform, " +
+        "so they are different accounts and were imported as separate creators. " +
+        "Merging them on the name alone would have fused two real people into one " +
+        "record. Worth confirming, since the reverse mistake is also possible: one " +
+        "person who changed handles.",
+    );
+    lines.push("");
+    lines.push(`| Rows | Name | Platform | Handles |`);
+    lines.push(`| --- | --- | --- | --- |`);
+    for (const conflict of result.nameConflicts) {
+      lines.push(
+        `| ${conflict.rows.join(" and ")} | ${conflict.name} | ` +
+          `${PLATFORM_LABEL[conflict.platform]} | ` +
+          `\`${conflict.handles[0]}\` vs \`${conflict.handles[1]}\` |`,
+      );
+    }
+    lines.push("");
+  }
+
   // One URL claimed by several creators
   if (result.sharedUrls.length) {
     lines.push(`## One URL, more than one creator`);

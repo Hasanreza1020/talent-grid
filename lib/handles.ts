@@ -56,6 +56,39 @@ const FACEBOOK_NON_HANDLE = new Set([
   "people",
 ]);
 
+/** Hosts that wrap an outbound link rather than being the destination. */
+const LINK_SHIM_HOSTS = [
+  "l.instagram.com",
+  "l.facebook.com",
+  "lm.facebook.com",
+  "l.messenger.com",
+];
+
+/**
+ * Unwraps a link-shim URL to the address it actually points at.
+ *
+ * Instagram and Facebook rewrite outbound links through their own redirector,
+ * putting the real destination in a `u` parameter. A sheet built by copying
+ * links out of a profile bio is full of them, and taken at face value a
+ * shimmed TikTok link reads as an Instagram account, which would file the
+ * follower count under the wrong platform entirely.
+ *
+ * Shims occasionally nest, so this unwraps repeatedly, with a depth limit so a
+ * malformed loop cannot hang the importer.
+ */
+export function unwrapLinkShim(url: string, depth = 0): string {
+  if (depth > 3) return url;
+  try {
+    const parsed = new URL(url.trim());
+    if (!LINK_SHIM_HOSTS.includes(parsed.hostname.toLowerCase())) return url;
+    const target = parsed.searchParams.get("u");
+    if (!target) return url;
+    return unwrapLinkShim(decodeURIComponent(target), depth + 1);
+  } catch {
+    return url;
+  }
+}
+
 export function detectPlatform(url: string): Platform | null {
   const host = safeHost(url);
   if (!host) return null;
