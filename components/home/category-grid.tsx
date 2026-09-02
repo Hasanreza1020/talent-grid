@@ -1,19 +1,24 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, Users } from "lucide-react";
 import { collageSize, type CategoryCard } from "@/lib/home/categories";
 import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
 
 /**
  * Categories as collage tiles.
  *
- * Each card is a square of the category's sixteen biggest creators, greyed and
- * washed out under the surface colour until the faces are barely there. The
- * collage is texture, not content: it says "there are people behind this" at a
- * glance, and everything a reader actually needs is in the text on top.
+ * Each card is a square of the category's sixteen biggest creators in colour,
+ * under a black scrim, with the name and the two figures in white over the
+ * middle. The collage is texture, not content: it says "there are people behind
+ * this" at a glance, and everything a reader needs is in the text on top.
  *
- * The wash is painted with the surface token rather than a literal white, so
- * the card inverts with the rest of the product if a dark theme is added
- * instead of turning into a bright block on a dark page.
+ * A category with no portraits gets no scrim, and its text stays ink on the
+ * surface colour — white on white is the one way this card can fail badly, so
+ * the two treatments are chosen together rather than assumed.
+ *
+ * The scrim is literal black rather than an ink token on purpose. It is
+ * darkening a photograph, not painting a surface, and it should not follow the
+ * page if a dark theme is ever added.
  */
 export function CategoryGrid({ cards }: { cards: CategoryCard[] }) {
   return (
@@ -34,13 +39,17 @@ function CategoryTile({ card, eager }: { card: CategoryCard; eager: boolean }) {
 
   const reach = card.reach === null ? NO_DATA : formatCompact(card.reach);
 
+  const hasCollage = perSide > 0;
+
   return (
     <Link
       href={`/creators?category=${card.slug}`}
       aria-label={`${card.name}, ${formatNumber(card.creatorCount)} creators, ${reach} reach`}
-      className="group relative flex aspect-square flex-col justify-between overflow-hidden rounded-xl border border-hairline bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      className={`group relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+        hasCollage ? "border-transparent text-white" : "border-hairline bg-surface text-ink"
+      }`}
     >
-      {perSide > 0 ? (
+      {hasCollage ? (
         <>
           <div
             aria-hidden
@@ -57,41 +66,52 @@ function CategoryTile({ card, eager }: { card: CategoryCard; eager: boolean }) {
                   sizes="80px"
                   loading={eager ? undefined : "lazy"}
                   priority={false}
-                  className="object-cover grayscale"
+                  className="object-cover"
                 />
               </span>
             ))}
           </div>
 
           {/*
-            The wash. Sits above the collage and below the text, and lifts a
-            little on hover so the faces surface — one change, no lift, no
-            shadow, no scale. The transition is dropped under reduced motion by
-            the global rule in globals.css.
+            The scrim. Heavy enough to carry white text at full contrast over
+            whatever the brightest photograph in the set turns out to be, and
+            it lifts on hover so the faces come forward — one change, no lift,
+            no shadow, no scale. Reduced motion drops the transition through the
+            global rule in globals.css.
           */}
           <div
             aria-hidden
-            className="absolute inset-0 bg-surface/85 transition-colors duration-200 group-hover:bg-surface/70"
+            className="absolute inset-0 bg-black/60 transition-colors duration-200 group-hover:bg-black/45"
           />
         </>
       ) : null}
 
-      <span className="relative flex flex-1 items-center justify-center px-2 text-center">
+      <span className="relative flex flex-col items-center gap-3 px-2 text-center">
         <span className="font-display text-xl leading-tight">{card.name}</span>
-      </span>
 
-      <span className="relative flex items-baseline gap-4 text-sm">
-        <span className="flex items-baseline gap-1.5">
-          <span className="numeral">{formatNumber(card.creatorCount)}</span>
-          <span className="text-xs text-ink-muted">creators</span>
-        </span>
-        <span className="flex items-baseline gap-1.5">
-          <span className={card.reach === null ? "text-xs text-ink-muted" : "numeral"}>
-            {reach}
+        <span className="flex items-center gap-4 text-sm">
+          <span className="flex items-center gap-1.5">
+            <Users
+              aria-hidden
+              className={`size-3.5 ${hasCollage ? "text-white/60" : "text-ink-muted"}`}
+            />
+            <span className="numeral">{formatNumber(card.creatorCount)}</span>
           </span>
-          {card.reach === null ? null : (
-            <span className="text-xs text-ink-muted">reach</span>
-          )}
+          <span className="flex items-center gap-1.5">
+            <Eye
+              aria-hidden
+              className={`size-3.5 ${hasCollage ? "text-white/60" : "text-ink-muted"}`}
+            />
+            <span
+              className={
+                card.reach === null
+                  ? `text-xs ${hasCollage ? "text-white/60" : "text-ink-muted"}`
+                  : "numeral"
+              }
+            >
+              {reach}
+            </span>
+          </span>
         </span>
       </span>
     </Link>
