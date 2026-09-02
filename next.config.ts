@@ -27,6 +27,18 @@ function supabaseImagePattern() {
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: supabaseImagePattern(),
+    // The home page alone asks for a hero wall and a collage per category.
+    // AVIF is materially smaller than WebP on photographic content, and the
+    // optimiser falls back on its own where a browser cannot take it.
+    formats: ["image/avif", "image/webp"],
+    // Portraits are served at 28, 32, 56, 80 and 128 css pixels. The default
+    // ladder starts at 16 and climbs in steps that miss most of those.
+    imageSizes: [28, 32, 48, 56, 80, 96, 128, 256, 384],
+  },
+  experimental: {
+    // Both are barrel files. Without this the whole icon set and the whole
+    // chart library are walked on every import.
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
 };
 

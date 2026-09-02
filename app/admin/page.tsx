@@ -39,12 +39,12 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <div className="-mx-4 lg:-mx-8">
+    <div className="-mx-6 lg:-mx-10">
       <Band overview={overview} />
 
       {/* The content column rides up over the band's lower edge, so the band
           reads as a header the page sits on rather than a separate strip. */}
-      <div className="relative z-10 -mt-16 space-y-10 px-4 pb-16 lg:px-8">
+      <div className="relative z-10 -mt-16 space-y-10 px-6 pb-16 lg:px-10">
         <section aria-labelledby="key-metrics">
           <h2 id="key-metrics" className="sr-only">
             Key metrics
@@ -269,7 +269,7 @@ export default async function AdminDashboardPage() {
 
 function Band({ overview }: { overview: Awaited<ReturnType<typeof getOverview>> }) {
   return (
-    <header className="relative overflow-hidden bg-ink px-4 pb-28 pt-10 text-white lg:px-8">
+    <header className="relative overflow-hidden bg-ink px-6 pb-28 pt-10 text-white lg:px-10">
       {/*
         The only texture on the page, and it earns it by being the roster
         itself. Grayscale under a heavy ink wash so no face competes with the

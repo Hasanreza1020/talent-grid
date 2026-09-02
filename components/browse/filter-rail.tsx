@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,13 @@ export type Facets = {
  * The filters and the transition that writes them live in BrowseProvider,
  * because the result set has to react to the same click and is on the other
  * side of the server/client line. This component only renders controls.
+ *
+ * Below lg the rail collapses behind a single button. Left expanded it is
+ * roughly two thousand pixels of checkboxes standing between a phone and the
+ * first creator, which is the difference between a filter and an obstacle. The
+ * controls are one DOM tree either way — the toggle only ever hides them, and
+ * from lg they are shown regardless of its state — so there is no second copy
+ * of the rail to keep in step.
  */
 export function FilterRail({
   facets,
@@ -57,10 +64,34 @@ export function FilterRail({
   );
 
   const activeCount = activeFilterKeys(filters).length;
+  const [open, setOpen] = useState(false);
 
   return (
     <aside className="w-full shrink-0 lg:w-[280px]" aria-label="Filters">
-      <div className="sticky top-14 space-y-6 py-6 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:pr-4">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-controls="filter-rail-controls"
+        className="mt-6 flex w-full items-center justify-between gap-3 rounded-lg border border-hairline bg-surface px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
+      >
+        <span className="flex items-center gap-2">
+          Filters
+          {activeCount > 0 ? (
+            <span className="numeral rounded-full bg-ink px-1.5 py-0.5 text-xs text-white">
+              {activeCount}
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown
+          className={`size-4 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <div
+        id="filter-rail-controls"
+        className={`${open ? "block" : "hidden"} space-y-6 py-6 lg:!block lg:sticky lg:top-14 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:pr-4`}
+      >
         <form
           onSubmit={(event) => {
             event.preventDefault();

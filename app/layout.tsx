@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Instrument_Serif, Inter, Noto_Sans_Bengali } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppProviders } from "@/components/providers";
 import "./globals.css";
 
 const displaySerif = Instrument_Serif({
@@ -40,9 +39,7 @@ export default function RootLayout({
       <body
         className={`${displaySerif.variable} ${ui.variable} ${bengali.variable} bg-canvas text-ink`}
       >
-        <AppProviders>
-          <TooltipProvider delayDuration={120}>{children}</TooltipProvider>
-        </AppProviders>
+        <TooltipProvider delayDuration={120}>{children}</TooltipProvider>
         <Toaster position="bottom-center" />
       </body>
     </html>

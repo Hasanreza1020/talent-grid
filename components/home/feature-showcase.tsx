@@ -20,7 +20,7 @@ export function FeatureShowcase({ stats }: { stats: ShowcaseStat[] }) {
   return (
     <section className="space-y-12" aria-labelledby="why-grid">
       {/* Proof, condensed to a strip so the argument below carries the weight. */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-8 border-y border-hairline py-8 lg:grid-cols-4">
+      <dl className="grid grid-cols-3 gap-x-6 gap-y-8 border-y border-hairline py-8">
         {stats.map((stat) => (
           <div key={stat.label}>
             <dt className="sr-only">{stat.label}</dt>

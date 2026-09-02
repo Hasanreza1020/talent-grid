@@ -10,7 +10,7 @@ import { FeatureShowcase } from "@/components/home/feature-showcase";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { buildCategoryCards } from "@/lib/home/categories";
 import { SectionHeading } from "@/components/ui-bits";
-import { formatCompact, formatDate, formatNumber, NO_DATA } from "@/lib/format";
+import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
 
 
 export const metadata = { title: "Grid" };
@@ -80,14 +80,7 @@ export default async function HomePage() {
     }))
     .filter((section) => section.creators.length > 0);
 
-  // The proof strip. Every figure is read from the roster as it stands, and
-  // the refresh date is the newest snapshot on file rather than a promise
-  // about how often it happens.
-  const lastRefresh = rows.reduce<string | null>((latest, row) => {
-    if (!row.primaryCapturedOn) return latest;
-    return latest === null || row.primaryCapturedOn > latest ? row.primaryCapturedOn : latest;
-  }, null);
-
+  // The proof strip. Every figure is read from the roster as it stands.
   const showcaseStats = [
     { value: formatNumber(rows.length), label: "creators on file" },
     {
@@ -95,10 +88,6 @@ export default async function HomePage() {
       label: "combined reach",
     },
     { value: formatNumber(categories.length), label: "categories" },
-    {
-      value: lastRefresh ? formatDate(lastRefresh) : NO_DATA,
-      label: "last stat refresh",
-    },
   ];
 
   return (

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initialsOf } from "@/lib/format";
@@ -16,23 +16,56 @@ type Summary = {
   primaryHandle: string | null;
 };
 
-function useSummaries(slugs: string[]) {
-  return useQuery({
-    queryKey: ["creator-summaries", [...slugs].sort().join(",")],
-    enabled: slugs.length > 0,
-    queryFn: async (): Promise<Summary[]> => {
+/**
+ * Summaries for whatever is selected, cached for the life of the tab.
+ *
+ * This was a react-query call, and react-query's only consumer in the product.
+ * One keyed fetch does not earn a query client, a provider around every page
+ * in the shell and thirteen kilobytes in the bundle. The cache below is a Map
+ * that survives client-side navigation for the same reason the library's did:
+ * it lives outside the component tree.
+ */
+const summaryCache = new Map<string, Summary[]>();
+
+function useSummaries(slugs: string[]): { data: Summary[] } {
+  const key = [...slugs].sort().join(",");
+  const [data, setData] = useState<Summary[]>(() => summaryCache.get(key) ?? []);
+
+  useEffect(() => {
+    if (key === "") {
+      setData([]);
+      return;
+    }
+
+    const cached = summaryCache.get(key);
+    if (cached) {
+      setData(cached);
+      return;
+    }
+
+    // Guards against a slower earlier request landing after a newer one.
+    let current = true;
+    (async () => {
       try {
-        const response = await fetch(`/api/creators/summary?slugs=${slugs.join(",")}`);
-        if (!response.ok) return [];
+        const response = await fetch(`/api/creators/summary?slugs=${key}`);
+        if (!response.ok) return;
         // An expired session is redirected to the login page by the
         // middleware, so the body can be HTML rather than JSON.
         const body = await response.json();
-        return (body.creators ?? []) as Summary[];
+        const creators = (body.creators ?? []) as Summary[];
+        summaryCache.set(key, creators);
+        if (current) setData(creators);
       } catch {
-        return [];
+        // The tray degrades to the names already in the selection.
       }
-    },
-  });
+    })();
+
+    return () => {
+      current = false;
+    };
+  }, [key]);
+
+  return { data };
 }
 
 /**
@@ -43,7 +76,7 @@ function useSummaries(slugs: string[]) {
 export function CompareTray() {
   const pathname = usePathname();
   const { slugs, remove, clear, pending, resolvePending, cancelPending } = useCompare();
-  const { data: summaries = [] } = useSummaries(slugs);
+  const { data: summaries } = useSummaries(slugs);
 
   if (slugs.length === 0) return null;
   // On /compare the slots are this, in full. Two bars pinned to the bottom of
