@@ -1,7 +1,58 @@
+# Files the AI assistant / IDE indexer must never pull into context.
+# Gitignore-style syntax. Keeping this tight is what stops "prompt too long":
+# the indexer only has room for source when the heavy files are excluded.
+
+# --- Dependencies & package manager ---
 node_modules/
-.next/
+.pnp
+.pnp.*
+.yarn/
 pnpm-lock.yaml
-.git/
+package-lock.json
+yarn.lock
+
+# --- Build output & caches ---
+.next/
+out/
+build/
+dist/
 coverage/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Version control ---
+.git/
+
+# --- Raw data dumps (large, low-signal; parsing rules live in the spec) ---
+# Note: the CSVs live under scripts/data/, not data/. Match them wherever they are.
+**/*.csv
+scripts/data/
 scripts/output/
-data/*.csv
+
+# --- Supabase local state ---
+supabase/.temp/
+supabase/.branches/
+
+# --- Binary & static assets (no useful text for the model) ---
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.avif
+*.svg
+*.pdf
+*.woff
+*.woff2
+*.ttf
+*.otf
+
+# --- Secrets & logs ---
+.env
+.env.*
+!.env.example
+*.log
+*.pem

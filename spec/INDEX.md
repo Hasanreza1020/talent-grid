@@ -1,31 +1,38 @@
-# Spec routing table
+# Where things live — the routing table
 
-Read only what the current phase needs. Reading more is what ends sessions.
+Read narrowly. Open the one area a task touches, not the tree. Reading more is
+what fills the context window and ends sessions.
 
-**Always read:** `spec/00-core.json`
+**Always orient from:** `README.md` (§ "How it is put together" and the
+decisions that follow it) and this file. Nothing else needs reading up front.
 
-| Phase | Also read |
+Then open only the area the task is in:
+
+| Working on… | Read |
 | --- | --- |
-| 1 — Foundation | `spec/02-schema.json`, `spec/01-design.json` |
-| 2 — Data in | `spec/02-schema.json`, `spec/03-import.json` |
-| 3 — Admin | `spec/02-schema.json`, `spec/05-routes.json` |
-| 4 — Creator detail | `spec/05-routes.json`, `spec/04-metrics.json`, `spec/01-design.json` |
-| 5 — Browse | `spec/05-routes.json`, `spec/01-design.json` |
-| 6 — Home | `spec/05-routes.json`, `spec/01-design.json` |
-| 7 — Comparison | `spec/06-comparison.json`, `spec/04-metrics.json` |
-| 8 — Shortlists | `spec/05-routes.json`, `spec/02-schema.json` |
-| 9 — Ingestion | `spec/02-schema.json`, `spec/04-metrics.json` |
+| Data model / schema / RLS | `supabase/migrations/` (in filename order), `lib/types.ts` |
+| CSV / TSV import | `lib/import/transform.ts`, `lib/dedup.ts`, `lib/handles.ts`, `scripts/import-csv.ts` |
+| Admin screens (create/edit creator) | `components/admin/`, `app/admin/actions.ts` |
+| Creator detail page | `app/(app)/creators/[slug]/`, `lib/db/creators.ts` |
+| Browse / filter / search | `app/(app)/page.tsx`, `components/browse/`, `lib/browse.ts` |
+| Comparison feature | `components/compare/`, `lib/compare.ts` |
+| Shortlists / sharing | `app/share/[token]/`, `lib/db/` |
+| Metrics ingestion | `lib/metrics/` (one source per file under `sources/`), `scripts/refresh-metrics.ts` |
+| Auth / access control | `middleware.ts`, `supabase/migrations/*_rls.sql`, `lib/db/` |
 
-`spec/07-phases.json` holds the phase list and each phase's `done_when`. Read it only
-when you need to confirm a phase is finished.
+## Ground rules that outrank convenience
 
-## File contents
+These are enforced in code and migrations; changing a screen does not change
+them. Full rationale is in `README.md`.
 
-- `00-core.json` — meta, stack, environment, conventions, hard_rules, out_of_scope_for_v1, open_questions_for_the_owner
-- `01-design.json` — design_direction
-- `02-schema.json` — data_model
-- `03-import.json` — data_import
-- `04-metrics.json` — metrics
-- `05-routes.json` — routes
-- `06-comparison.json` — comparison_feature
-- `07-phases.json` — build_phases
+- **Null is not zero.** Missing data renders "No data", never `0`.
+- **Metric snapshots are append-only.** A new count is a new dated row.
+- **Tier and primary platform are derived** by a DB trigger, not set by hand.
+- **Contacts are viewer-invisible.** RLS, not the UI, enforces it.
+
+## What is NOT here
+
+There is no `spec/*.json`. Earlier drafts of this file pointed at
+`00-core.json` … `07-phases.json`; those files were never committed, and
+chasing them forced whole-codebase scans. The table above replaces them.
+`docs/handoff/` holds session handoffs when a large piece of work is paused.
