@@ -7,10 +7,10 @@ import { toCardData } from "@/lib/card";
 import { PortraitWall } from "@/components/chrome/portrait-wall";
 import { HomeSearch } from "@/components/chrome/home-search";
 import { CategoryIcon } from "@/components/platform-icon";
-import { ByTheNumbers } from "@/components/home/by-the-numbers";
+import { FeatureShowcase } from "@/components/home/feature-showcase";
 import { SectionHeading } from "@/components/ui-bits";
-import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
-import { PLATFORMS, PLATFORM_LABEL, TIERS, TIER_LABEL, TIER_RANGE_LABEL } from "@/lib/types";
+import { formatCompact, formatDate, formatNumber, NO_DATA } from "@/lib/format";
+
 
 export const metadata = { title: "Grid" };
 
@@ -77,56 +77,24 @@ export default async function HomePage() {
     }))
     .filter((section) => section.creators.length > 0);
 
-  // By the numbers -----------------------------------------------------------
+  // The proof strip. Every figure is read from the roster as it stands, and
+  // the refresh date is the newest snapshot on file rather than a promise
+  // about how often it happens.
+  const lastRefresh = rows.reduce<string | null>((latest, row) => {
+    if (!row.primaryCapturedOn) return latest;
+    return latest === null || row.primaryCapturedOn > latest ? row.primaryCapturedOn : latest;
+  }, null);
 
-  const tierData = TIERS.map((tier) => ({
-    tier: TIER_LABEL[tier],
-    range: TIER_RANGE_LABEL[tier],
-    creators: rows.filter((row) => row.tier === tier).length,
-  }));
-
-  const platformData = PLATFORMS.map((platform) => {
-    const on = rows.filter((row) =>
-      row.accounts.some((account) => account.platform === platform),
-    );
-    const reach = on.reduce<number | null>((sum, row) => {
-      const followers = row.accounts.find((a) => a.platform === platform)?.latest?.followers;
-      if (followers === null || followers === undefined) return sum;
-      return (sum ?? 0) + followers;
-    }, null);
-    return {
-      platform,
-      label: PLATFORM_LABEL[platform],
-      creators: on.length,
-      reach,
-    };
-  }).filter((entry) => entry.creators > 0);
-
-  const completeness = [
+  const showcaseStats = [
+    { value: formatNumber(rows.length), label: "creators on file" },
     {
-      label: "Has a portrait",
-      done: rows.filter((row) => row.portraitUrl !== null).length,
-      total: rows.length,
+      value: totalReach === null ? NO_DATA : formatCompact(totalReach),
+      label: "combined reach",
     },
+    { value: formatNumber(categories.length), label: "categories" },
     {
-      label: "Has engagement data",
-      done: rows.filter(
-        (row) =>
-          row.primaryAvgLikes !== null ||
-          row.primaryAvgComments !== null ||
-          row.primaryAvgShares !== null,
-      ).length,
-      total: rows.length,
-    },
-    {
-      label: "Has a rate on file",
-      done: rows.filter((row) => row.cheapestRateBdt !== null).length,
-      total: rows.length,
-    },
-    {
-      label: "Verified against the platform",
-      done: rows.filter((row) => row.dataConfidence !== "unverified").length,
-      total: rows.length,
+      value: lastRefresh ? formatDate(lastRefresh) : NO_DATA,
+      label: "last stat refresh",
     },
   ];
 
@@ -200,36 +168,8 @@ export default async function HomePage() {
           )}
         </section>
 
-        {/* Stat band */}
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <StatCard tone="ink" label="Creators on file" value={formatNumber(rows.length)} />
-          <StatCard
-            tone="brand"
-            label="Combined reach"
-            value={totalReach === null ? NO_DATA : formatCompact(totalReach)}
-            note={
-              totalReach === null
-                ? undefined
-                : "Summed across each creator's recorded accounts."
-            }
-          />
-          <StatCard
-            tone="stone"
-            label="Categories"
-            value={formatNumber(categories.length)}
-            note={`${populatedCategories.length} of them have creators filed under them.`}
-          />
-        </section>
-
-        {/* By the numbers */}
-        <section className="space-y-6">
-          <SectionHeading>By the numbers</SectionHeading>
-          <ByTheNumbers
-            tiers={tierData}
-            platforms={platformData}
-            completeness={completeness}
-          />
-        </section>
+        {/* What Grid is, in the slot the internal charts used to occupy. */}
+        <FeatureShowcase stats={showcaseStats} />
 
         {/* Suggested creators */}
         <section className="space-y-6">
@@ -290,33 +230,5 @@ export default async function HomePage() {
         ))}
       </div>
     </>
-  );
-}
-
-function StatCard({
-  tone,
-  label,
-  value,
-  note,
-}: {
-  tone: "ink" | "brand" | "stone";
-  label: string;
-  value: string;
-  note?: string;
-}) {
-  const palette = {
-    ink: "bg-ink text-white",
-    brand: "bg-brand text-white",
-    stone: "bg-stone text-ink",
-  }[tone];
-
-  return (
-    <div className={`${palette} flex min-h-[13rem] flex-col justify-between rounded-xl p-6`}>
-      <p className="text-sm opacity-80">{label}</p>
-      <div>
-        <p className="numeral text-3xl leading-none">{value}</p>
-        {note ? <p className="mt-3 text-xs opacity-75">{note}</p> : null}
-      </div>
-    </div>
   );
 }
