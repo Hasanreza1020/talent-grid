@@ -164,24 +164,30 @@
 }
 
 @layer components {
-  /* Portrait treatment. Grayscale is never baked into the stored file. */
+  /*
+    Portraits render in colour. A slight lift on hover marks the card being
+    pointed at, which is what the warm glow used to do, without laying a
+    colour over the photograph.
+  */
   .portrait-media {
-    filter: grayscale(1) contrast(1.08);
-    transition: filter 200ms ease;
+    transition: transform 300ms ease;
   }
   .group:hover .portrait-media {
-    filter: grayscale(0) contrast(1);
+    transform: scale(1.03);
   }
   /*
-    The hover marker on a portrait. Warm rather than black, and only present
-    while pointed at, so nothing is laid over a face at rest. It stops well
-    short of opaque: this marks the card, it does not tint the photograph.
+    The scrim under the identity block. Always present, because the name and
+    the follower counts now sit on the photograph and have to stay legible
+    over whatever is behind them. Eased rather than linear so the top edge
+    does not read as a band across the picture.
   */
-  .portrait-glow {
+  .portrait-scrim {
     background: linear-gradient(
       to top,
-      rgb(255 77 13 / 0.72) 0%,
-      rgb(255 77 13 / 0.32) 45%,
+      rgb(0 0 0 / 0.88) 0%,
+      rgb(0 0 0 / 0.72) 28%,
+      rgb(0 0 0 / 0.38) 58%,
+      rgb(0 0 0 / 0.12) 80%,
       transparent 100%
     );
   }

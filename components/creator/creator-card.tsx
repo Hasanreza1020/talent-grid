@@ -20,13 +20,50 @@ export function CreatorCard({ data }: { data: CardData }) {
           name={data.displayName}
           src={data.portraitUrl}
           sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, 90vw"
+          chips={
+            <>
+              {data.primaryCategoryName ? (
+                <ScrimChip>{data.primaryCategoryName}</ScrimChip>
+              ) : null}
+              {data.tagLabels.slice(0, 1).map((label) => (
+                <ScrimChip key={label}>#{label}</ScrimChip>
+              ))}
+            </>
+          }
         >
-          {data.primaryCategoryName ? (
-            <ScrimChip>{data.primaryCategoryName}</ScrimChip>
-          ) : null}
-          {data.tagLabels.slice(0, 1).map((label) => (
-            <ScrimChip key={label}>#{label}</ScrimChip>
-          ))}
+          <h3 className="font-display text-lg leading-tight">{data.displayName}</h3>
+
+          {/* The handle is part of the record, not a hover reveal: it is how
+              the team refers to a creator out loud and in a client email. */}
+          <p className="mt-0.5 truncate text-sm text-white/75">
+            {data.primaryHandle ? `@${data.primaryHandle}` : "Handle not on file"}
+          </p>
+
+          {/* One column per platform. The mark identifies the platform so the
+              number keeps the serif and stays what you read. */}
+          {data.accounts.length === 0 ? (
+            <p className="mt-2 text-xs text-white/70">No accounts on file</p>
+          ) : (
+            <dl className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {data.accounts.map((account) => (
+                <div key={account.platform} className="flex items-center gap-1.5">
+                  <dt>
+                    <PlatformIcon platform={account.platform} className="size-4" />
+                    <span className="sr-only">{account.platformLabel}</span>
+                  </dt>
+                  <dd
+                    className={
+                      account.followers === null
+                        ? "text-xs text-white/70"
+                        : "numeral text-sm leading-none"
+                    }
+                  >
+                    {account.followers === null ? NO_DATA : formatCompact(account.followers)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </Portrait>
       </Link>
 
@@ -41,54 +78,16 @@ export function CreatorCard({ data }: { data: CardData }) {
         />
       </label>
 
-      <div className="mt-3">
-        <h3 className="font-display text-lg leading-tight">
-          <Link href={`/creators/${data.slug}`}>{data.displayName}</Link>
-        </h3>
-
-        {/* The handle is part of the record, not a hover reveal: it is how the
-            team refers to a creator out loud and in a client email. */}
-        <p className="mt-0.5 truncate text-sm text-ink-muted">
-          {data.primaryHandle ? `@${data.primaryHandle}` : "Handle not on file"}
+      {/* The one figure left under the image. It is absent for most creators,
+          and an absent engagement rate is a gap, not a zero. */}
+      {data.engagementRate !== null ? (
+        <p className="mt-2 text-xs text-ink-muted">
+          {data.engagementLabel}{" "}
+          <span className="numeral text-sm text-ink">
+            {data.engagementRate.toFixed(2)}%
+          </span>
         </p>
-
-        {/* One row, one column per platform. The mark identifies the platform
-            so the number keeps the serif and stays what you read. */}
-        {data.accounts.length === 0 ? (
-          <p className="mt-3 border-t border-hairline pt-3 text-sm text-ink-muted">
-            No accounts on file
-          </p>
-        ) : (
-          <dl className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3 border-t border-hairline pt-3">
-            {data.accounts.map((account) => (
-              <div key={account.platform} className="flex items-center gap-2">
-                <dt className="text-ink-muted">
-                  <PlatformIcon platform={account.platform} className="size-5" />
-                  <span className="sr-only">{account.platformLabel}</span>
-                </dt>
-                <dd
-                  className={
-                    account.followers === null
-                      ? "text-xs text-ink-muted"
-                      : "numeral text-base leading-none text-ink"
-                  }
-                >
-                  {account.followers === null ? NO_DATA : formatCompact(account.followers)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-
-        {data.engagementRate !== null ? (
-          <p className="mt-3 text-xs text-ink-muted">
-            {data.engagementLabel}{" "}
-            <span className="numeral text-sm text-ink">
-              {data.engagementRate.toFixed(2)}%
-            </span>
-          </p>
-        ) : null}
-      </div>
+      ) : null}
     </article>
   );
 }

@@ -75,7 +75,7 @@ export function PortraitWall({ creators }: { creators: WallCreator[] }) {
                       width={128}
                       height={160}
                       sizes="128px"
-                      className="size-full object-cover grayscale contrast-[1.08] transition-[filter] duration-200 group-hover/tile:grayscale-0"
+                      className="size-full object-cover"
                     />
                   ) : (
                     <span className="flex size-full items-center justify-center font-display text-lg text-ink/30">

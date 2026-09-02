@@ -81,8 +81,8 @@ threshold. Anything below it is reported rather than attached: putting the
 wrong face on a creator is worse than leaving the tile blank.
 
 Images are centre-cropped to 4:5, resized to 1000x1250 and stored as WebP **in
-colour**. The black-and-white treatment is a render-time CSS filter and is
-never baked into the stored file. The report is at
+colour**, and they render in colour. Nothing about the display treatment is
+ever baked into the stored file. The report is at
 [`scripts/output/portrait-report.md`](scripts/output/portrait-report.md).
 
 ## Refreshing metrics from a platform API
@@ -170,10 +170,16 @@ from the highest follower count whenever an account or a snapshot changes, so
 there is exactly one place that decides what tier a creator is in.
 
 **The orange is a pointer, not a theme.** It is permitted on the active nav
-underline, the primary button, the portrait hover badge, the best-value marker
-in comparison tables, parse failures in the import preview, and one stat card
-on the home page. If more than roughly two percent of a screen is orange,
+underline, the primary button, the compare checkbox when ticked, the best-value
+marker in comparison tables, parse failures in the import preview, and one stat
+card on the home page. If more than roughly two percent of a screen is orange,
 something has gone wrong.
+
+**A creator card is its photograph.** The name, the handle and the follower
+counts sit on the image over a scrim, not in a block beneath it, so a grid of
+cards reads as faces rather than as a table with pictures attached. The scrim
+is drawn only where there is text to carry; a portrait with nothing over it is
+left alone. Hover lifts the image rather than tinting it.
 
 ## Known gaps
 

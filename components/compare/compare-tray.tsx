@@ -89,7 +89,7 @@ export function CompareTray() {
                     alt={summary.displayName}
                     width={40}
                     height={40}
-                    className="size-10 object-cover grayscale"
+                    className="size-10 object-cover"
                   />
                 ) : (
                   <span className="flex size-10 items-center justify-center font-display text-sm text-ink/45">

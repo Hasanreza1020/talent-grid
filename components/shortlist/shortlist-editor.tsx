@@ -60,7 +60,7 @@ export function ShortlistEditor({
                   alt={item.displayName}
                   width={64}
                   height={80}
-                  className="size-full object-cover grayscale"
+                  className="size-full object-cover"
                 />
               ) : (
                 <span className="flex size-full items-center justify-center font-display text-sm text-ink/45">

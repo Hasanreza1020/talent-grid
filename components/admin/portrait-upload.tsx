@@ -137,7 +137,7 @@ export function PortraitUpload({
               alt={creatorName}
               width={128}
               height={160}
-              className="size-full object-cover grayscale contrast-[1.08]"
+              className="size-full object-cover"
             />
           ) : (
             <span className="flex size-full items-center justify-center font-display text-lg text-ink/45">

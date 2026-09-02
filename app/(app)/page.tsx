@@ -49,6 +49,34 @@ export default async function HomePage() {
     .filter((category) => category.creatorCount > 0)
     .sort((a, b) => b.creatorCount - a.creatorCount);
 
+  // Eight per category. A creator counts towards a top-level category if they
+  // are filed under it or under one of its children, which is the rule the
+  // category counts already use. Ranked the way the suggestions are: by agency
+  // score where one can be computed, by reach where one cannot, so a category
+  // with no engagement data still leads with its largest accounts.
+  const categorySections = populatedCategories
+    .map((category) => ({
+      category,
+      creators: active
+        .filter((row) =>
+          row.categories.some(
+            (ref) => ref.id === category.id || ref.parentId === category.id,
+          ),
+        )
+        .sort((a, b) => {
+          const scoreA = metrics.get(a.id)?.score.value?.score ?? null;
+          const scoreB = metrics.get(b.id)?.score.value?.score ?? null;
+          if (scoreA !== null && scoreB !== null && scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+          if (scoreA !== null && scoreB === null) return -1;
+          if (scoreA === null && scoreB !== null) return 1;
+          return (b.totalReach ?? -1) - (a.totalReach ?? -1);
+        })
+        .slice(0, 8),
+    }))
+    .filter((section) => section.creators.length > 0);
+
   // By the numbers -----------------------------------------------------------
 
   const tierData = TIERS.map((tier) => ({
@@ -224,7 +252,7 @@ export default async function HomePage() {
           {suggestions.length === 0 ? (
             <p className="text-sm text-ink-muted">No creators yet.</p>
           ) : (
-            <ul className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {suggestions.map((row) => (
                 <li key={row.id}>
                   <CreatorCard data={toCardData(row, metrics.get(row.id)!.engagement)} />
@@ -233,6 +261,33 @@ export default async function HomePage() {
             </ul>
           )}
         </section>
+
+        {/* Eight from every category that has anyone in it. This is the part of
+            the page an account manager scrolls: the categories strip above is
+            for going somewhere, this is for seeing who is there. */}
+        {categorySections.map((section) => (
+          <section key={section.category.id} className="space-y-6">
+            <SectionHeading
+              action={
+                <Link
+                  href={`/creators?category=${section.category.slug}`}
+                  className="text-sm text-ink-muted hover:text-ink"
+                >
+                  See all {formatNumber(section.category.creatorCount)}
+                </Link>
+              }
+            >
+              {section.category.name}
+            </SectionHeading>
+            <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {section.creators.map((row) => (
+                <li key={row.id}>
+                  <CreatorCard data={toCardData(row, metrics.get(row.id)!.engagement)} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </>
   );

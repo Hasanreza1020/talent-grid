@@ -82,7 +82,7 @@ export default async function SharedShortlistPage({
                       alt={creator.displayName}
                       width={240}
                       height={300}
-                      className="size-full object-cover grayscale contrast-[1.08]"
+                      className="size-full object-cover"
                     />
                   ) : (
                     <span className="flex size-full items-center justify-center font-display text-2xl text-ink/45">

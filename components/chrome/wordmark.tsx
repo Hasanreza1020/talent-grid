@@ -62,16 +62,15 @@ export function Wordmark({
             </span>
           ) : null}
         </span>
-        {/* The line is 38 characters and the header is one row. Below md it
-            would push the nav links off the end, so the lockup falls back to
-            the mark and the name, which still say what this is. */}
+        {/* Short enough to keep at sm; below that the header is one crowded
+            row and the lockup falls back to the mark and the name. */}
         <span
           className={cn(
-            "mt-1 hidden text-[10px] leading-none md:block",
+            "mt-1 hidden text-[10px] leading-none sm:block",
             tone === "dark" ? "text-white/45" : "text-ink-muted",
           )}
         >
-          A Talent Management System By One Tech
+          A product of One Tech
         </span>
       </span>
     </Link>
