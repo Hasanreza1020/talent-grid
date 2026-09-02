@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useOptimistic, useTransition } from "react";
 import { LayoutGrid, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -11,11 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseFilters, filtersToQuery, type Sort } from "@/lib/browse";
+import type { Sort } from "@/lib/browse";
+import { useBrowse } from "@/components/browse/browse-context";
 
 /**
- * Sort and view. Optimistic for the same reason the filter rail is: the select
- * and the two view buttons have to show the choice on the click, not when the
+ * Sort and view. Reads the same optimistic filters the rail does, so the select
+ * and the two view buttons show the choice on the click rather than when the
  * re-sorted rows come back.
  */
 export function ViewControls({
@@ -25,20 +24,8 @@ export function ViewControls({
   sorts: readonly Sort[];
   sortLabels: Record<Sort, string>;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
-  const urlFilters = parseFilters(Object.fromEntries(searchParams.entries()));
-  const [filters, showFilters] = useOptimistic(urlFilters);
-
-  const go = (patch: Partial<typeof filters>) => {
-    const next = { ...filters, ...patch };
-    const query = filtersToQuery(next);
-    startTransition(() => {
-      showFilters(next);
-      router.replace(query ? `/creators?${query}` : "/creators", { scroll: false });
-    });
-  };
+  const { filters, update } = useBrowse();
+  const go = update;
 
   return (
     <div className="flex items-center gap-3">

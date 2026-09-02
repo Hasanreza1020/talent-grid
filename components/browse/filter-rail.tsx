@@ -1,20 +1,14 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useOptimistic, useState, useTransition } from "react";
+import { useCallback, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import {
-  parseFilters,
-  filtersToQuery,
-  activeFilterKeys,
-  EMPTY_FILTERS,
-  type BrowseFilters,
-} from "@/lib/browse";
+import { activeFilterKeys, EMPTY_FILTERS } from "@/lib/browse";
+import { useBrowse } from "@/components/browse/browse-context";
 import {
   DATA_CONFIDENCES,
   DATA_CONFIDENCE_LABEL,
@@ -40,12 +34,9 @@ export type Facets = {
  * the browser back button works, a filtered view can be pasted to a colleague,
  * and the server component re-runs the same pure filter code on the way back.
  *
- * The controls read from an optimistic copy of those filters rather than from
- * the URL directly. A transition keeps the old URL in place until the server
- * has answered, so a box driven straight off `useSearchParams` stays unticked
- * for the length of the query and the click feels dropped. The optimistic
- * value ticks it on the click and is discarded the moment the real URL lands,
- * so the two can never disagree for longer than the round trip.
+ * The filters and the transition that writes them live in BrowseProvider,
+ * because the result set has to react to the same click and is on the other
+ * side of the server/client line. This component only renders controls.
  */
 export function FilterRail({
   facets,
@@ -54,32 +45,8 @@ export function FilterRail({
   facets: Facets;
   canSeeRates: boolean;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
-  const urlFilters = useMemo(
-    () => parseFilters(Object.fromEntries(searchParams.entries())),
-    [searchParams],
-  );
-  const [filters, showFilters] = useOptimistic(urlFilters);
-  const [searchDraft, setSearchDraft] = useState(urlFilters.q);
-
-  const push = useCallback(
-    (next: BrowseFilters) => {
-      const query = filtersToQuery(next);
-      startTransition(() => {
-        showFilters(next);
-        router.replace(query ? `/creators?${query}` : "/creators", { scroll: false });
-      });
-    },
-    [router, showFilters],
-  );
-
-  const update = useCallback(
-    (patch: Partial<BrowseFilters>) => push({ ...filters, ...patch }),
-    [filters, push],
-  );
+  const { filters, push, update } = useBrowse();
+  const [searchDraft, setSearchDraft] = useState(filters.q);
 
   const toggleIn = useCallback(
     <T extends string>(current: T[], value: T): T[] =>
@@ -293,7 +260,6 @@ export function FilterRail({
           />
         </Group>
 
-        {isPending ? <p className="text-xs text-ink-muted">Updating</p> : null}
       </div>
     </aside>
   );

@@ -21,6 +21,8 @@ import { CreatorTable } from "@/components/browse/creator-table";
 import { FilterRail } from "@/components/browse/filter-rail";
 import { ViewControls } from "@/components/browse/view-controls";
 import { FilterRailSkeleton, ResultsSkeleton } from "@/components/browse/results-skeleton";
+import { BrowseProvider } from "@/components/browse/browse-context";
+import { CountFrame, ResultsFrame } from "@/components/browse/results-frame";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
@@ -31,6 +33,12 @@ export const metadata = { title: "Creators — Grid" };
  * The page itself awaits nothing but the query string, so the frame is on
  * screen before any database read starts. The two halves then arrive
  * independently.
+ *
+ * The Suspense boundaries below cover the first paint, where there is nothing
+ * on screen yet and the server is streaming. Filter clicks are the other case:
+ * there the previous results are already rendered, and React will not replace
+ * visible content with a fallback mid-transition, so ResultsFrame does that
+ * swap explicitly from the pending flag.
  */
 export default async function BrowsePage({
   searchParams,
@@ -42,36 +50,35 @@ export default async function BrowsePage({
   const key = filtersToQuery(filters);
 
   return (
-    <div className="mx-auto flex max-w-[80rem] flex-col gap-6 px-6 lg:flex-row">
-      {/* Not keyed. The rail's facets do not depend on the filters, so a filter
-          change leaves it mounted and every control in it stays live while the
-          results behind it are re-read. */}
-      <Suspense fallback={<FilterRailSkeleton />}>
-        <FilterRailSection />
-      </Suspense>
-
-      <div className="min-w-0 flex-1 py-6">
-        {/* The header row is rendered here rather than inside the boundary
-            below. ViewControls holds the optimistic sort and view, and a copy
-            of it inside the fallback would be a fresh instance reading the old
-            URL — the select would visibly snap back before moving forward. */}
-        <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-hairline pb-4">
-          <h1 className="text-lg">
-            <Suspense key={`count-${key}`} fallback={<Skeleton className="h-5 w-32" />}>
-              <ResultCount filters={filters} />
-            </Suspense>
-          </h1>
-          <ViewControls sorts={SORTS} sortLabels={SORT_LABEL} />
-        </div>
-
-        {/* Keyed on the query. A new key is a new boundary, so the skeleton
-            appears on the click rather than after the round trip — which is
-            the whole point of putting it here. */}
-        <Suspense key={key} fallback={<ResultsSkeleton view={filters.view} />}>
-          <Results filters={filters} />
+    <BrowseProvider>
+      <div className="mx-auto flex max-w-[80rem] flex-col gap-6 px-6 lg:flex-row">
+        {/* The rail is never swapped for a skeleton on a filter click. Its
+            facets do not depend on the filters, and blanking the control you
+            just used is the opposite of responsive. */}
+        <Suspense fallback={<FilterRailSkeleton />}>
+          <FilterRailSection />
         </Suspense>
+
+        <div className="min-w-0 flex-1 py-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-hairline pb-4">
+            <h1 className="text-lg">
+              <CountFrame>
+                <Suspense key={`count-${key}`} fallback={<Skeleton className="h-5 w-32" />}>
+                  <ResultCount filters={filters} />
+                </Suspense>
+              </CountFrame>
+            </h1>
+            <ViewControls sorts={SORTS} sortLabels={SORT_LABEL} />
+          </div>
+
+          <ResultsFrame>
+            <Suspense key={key} fallback={<ResultsSkeleton view={filters.view} />}>
+              <Results filters={filters} />
+            </Suspense>
+          </ResultsFrame>
+        </div>
       </div>
-    </div>
+    </BrowseProvider>
   );
 }
 
