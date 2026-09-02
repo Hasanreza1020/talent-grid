@@ -106,7 +106,7 @@ export function PlanView({
           aria-label={`${formatBdt(totals.spend)} of ${formatBdt(totals.budget)} committed`}
         >
           <div
-            className={`h-full rounded-full ${over ? "bg-warn" : "bg-ink"}`}
+            className={`sg-bar-fill h-full rounded-full ${over ? "bg-warn" : "bg-ink"}`}
             style={{ width: `${spentShare}%` }}
           />
         </div>
@@ -180,8 +180,12 @@ export function PlanView({
 
       {/* The shortlist */}
       <ul className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-        {picks.map((pick) => (
-          <li key={pick.candidate.id} className="space-y-3">
+        {picks.map((pick, index) => (
+          <li
+            key={pick.candidate.id}
+            className="sg-reveal space-y-3"
+            style={{ animationDelay: `${index * 40}ms` }}
+          >
             <CreatorCard data={toCardData(pick.candidate)} />
 
             <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">

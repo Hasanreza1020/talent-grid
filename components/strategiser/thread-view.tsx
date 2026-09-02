@@ -20,7 +20,6 @@ export function ThreadView({
   question,
   quickReplies,
   pending,
-  stage,
   notice,
   onAnswer,
   onStartOver,
@@ -30,7 +29,6 @@ export function ThreadView({
   question: string | null;
   quickReplies: string[];
   pending: boolean;
-  stage: number;
   notice: string | null;
   onAnswer: (text: string) => void;
   onStartOver: () => void;
@@ -124,18 +122,6 @@ export function ThreadView({
             </Button>
           </form>
         </div>
-      ) : null}
-
-      {pending ? (
-        <ol className="space-y-1.5 text-sm" aria-live="polite">
-          {["Reading your brief", "Searching the roster", "Building the mix"].map(
-            (label, index) => (
-              <li key={label} className={index <= stage ? "text-ink" : "text-ink-muted/60"}>
-                {label}
-              </li>
-            ),
-          )}
-        </ol>
       ) : null}
 
       <Button variant="ghost" size="sm" onClick={onStartOver} className="text-ink-muted">

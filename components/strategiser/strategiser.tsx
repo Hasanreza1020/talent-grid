@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { HeroLights } from "./hero-lights";
 import { PromptCard } from "./prompt-card";
+import { StageLabels } from "./stage-labels";
 import { ThreadView } from "./thread-view";
 import { PlanView } from "./plan-view";
 import { gatherAction, generatePlan } from "@/app/(app)/strategiser/actions";
@@ -37,6 +39,7 @@ export function Strategiser({
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<{ plan: Plan; brief: Brief } | null>(null);
   const [stage, setStage] = useState(0);
+  const [building, setBuilding] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const reset = () => {
@@ -50,12 +53,13 @@ export function Strategiser({
     setAssumptions([]);
     setNotice(null);
     setResult(null);
+    setBuilding(false);
   };
 
   /**
    * A budget that cannot buy anyone is caught before the pipeline runs. It is
-   * a question, not an error: the person may want fewer creators, and saying
-   * so costs one turn instead of a shortlist nobody can book.
+   * a question, not an error: the person may want fewer creators, and asking
+   * costs one turn instead of a shortlist nobody can book.
    */
   const budgetTooLow = (captured: Slots): string | null => {
     if (cheapestRate === null) return null;
@@ -75,8 +79,12 @@ export function Strategiser({
       audienceNotes: notes.join(" "),
     };
 
+    setBuilding(true);
     startTransition(async () => {
-      const tick = setInterval(() => setStage((current) => Math.min(2, current + 1)), 1200);
+      // Two server round trips behind four labels, so the sequence advances on
+      // a timer and holds at the last one rather than claiming a precision the
+      // pipeline does not report back.
+      const tick = setInterval(() => setStage((current) => Math.min(3, current + 1)), 1200);
       try {
         const outcome = await generatePlan(brief);
         if (outcome.ok) {
@@ -89,6 +97,7 @@ export function Strategiser({
       } finally {
         clearInterval(tick);
         setStage(0);
+        setBuilding(false);
       }
     });
   };
@@ -112,9 +121,7 @@ export function Strategiser({
 
       if (outcome.status === "need_info") {
         const tooLow = budgetTooLow(outcome.captured);
-        if (tooLow) {
-          setNotice(tooLow);
-        }
+        if (tooLow) setNotice(tooLow);
         setQuestion(outcome.question);
         setQuickReplies(outcome.quickReplies);
         setAsked(questionsAsked + 1);
@@ -138,9 +145,12 @@ export function Strategiser({
     });
   };
 
+  // Results are a working document. They sit on the ordinary canvas with no
+  // atmosphere behind them: once someone is reading data, the page stops
+  // performing.
   if (phase === "plan" && result) {
     return (
-      <div className="space-y-8">
+      <div className="mx-auto max-w-[80rem] space-y-8 px-4 py-10 sm:px-6">
         {assumptions.length > 0 ? (
           <ul className="space-y-1 text-sm text-ink-muted">
             {assumptions.map((note) => (
@@ -160,43 +170,52 @@ export function Strategiser({
     );
   }
 
-  if (phase === "gathering") {
-    return (
-      <ThreadView
-        thread={thread}
-        slots={slots}
-        question={question}
-        quickReplies={quickReplies}
-        pending={pending}
-        stage={stage}
-        notice={notice}
-        onStartOver={reset}
-        onAnswer={(text) => {
-          const next: Turn[] = [...thread, { role: "user", text }];
-          setThread(next);
-          advance(next, Math.min(asked, MAX_QUESTIONS));
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <PromptCard
-        value={draft}
-        onChange={setDraft}
-        pending={pending}
-        rosterSize={rosterSize}
-        onSubmit={() => {
-          const next: Turn[] = [{ role: "user", text: draft.trim() }];
-          setThread(next);
-          setPhase("gathering");
-          advance(next, 0);
-        }}
-      />
-      {notice ? (
-        <p className="mx-auto max-w-[46rem] text-sm text-warn">{notice}</p>
-      ) : null}
-    </div>
+    <section className="relative isolate overflow-hidden bg-ink">
+      <HeroLights working={building} />
+
+      <div className="relative mx-auto min-h-[70vh] max-w-[64rem] px-4 py-16 sm:px-6 sm:py-24">
+        {phase === "gathering" ? (
+          <div className="rounded-xl border border-hairline bg-surface p-6 sm:p-8">
+            <ThreadView
+              thread={thread}
+              slots={slots}
+              question={question}
+              quickReplies={quickReplies}
+              pending={pending}
+              notice={notice}
+              onStartOver={reset}
+              onAnswer={(text) => {
+                const next: Turn[] = [...thread, { role: "user", text }];
+                setThread(next);
+                advance(next, Math.min(asked, MAX_QUESTIONS));
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <PromptCard
+              value={draft}
+              onChange={setDraft}
+              pending={pending}
+              rosterSize={rosterSize}
+              onSubmit={() => {
+                const next: Turn[] = [{ role: "user", text: draft.trim() }];
+                setThread(next);
+                setPhase("gathering");
+                advance(next, 0);
+              }}
+            />
+            {notice ? (
+              <p className="mx-auto mt-6 max-w-[46rem] text-center text-sm text-white/80">
+                {notice}
+              </p>
+            ) : null}
+          </>
+        )}
+
+        {building ? <StageLabels stage={stage} rosterSize={rosterSize} /> : null}
+      </div>
+    </section>
   );
 }
