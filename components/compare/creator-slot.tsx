@@ -32,12 +32,15 @@ export function EmptySlot({
 export function FilledSlot({
   creator,
   index,
+  color,
   onChange,
   onClear,
   slotRef,
 }: {
   creator: CompareSubject;
   index: number;
+  /** The creator's chart colour. The dot beside the name is the chart legend. */
+  color: string;
   onChange: () => void;
   onClear: () => void;
   slotRef?: React.Ref<HTMLDivElement>;
@@ -45,28 +48,30 @@ export function FilledSlot({
   return (
     <div
       ref={slotRef}
-      tabIndex={-1}
-      className="relative flex min-h-[280px] w-full flex-col items-center rounded-xl border border-hairline bg-surface p-5 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      role="button"
+      tabIndex={0}
+      onClick={onChange}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onChange();
+        }
+      }}
+      aria-label={`Slot ${index + 1}, ${creator.name}. Choose a different creator`}
+      className="relative flex min-h-[280px] w-full cursor-pointer flex-col items-center rounded-xl border border-hairline bg-surface p-5 text-center transition-colors hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
     >
-      <div className="absolute right-2 top-2 flex items-center gap-0.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onChange}
-          className="h-7 px-2 text-xs text-ink-muted hover:text-ink"
-        >
-          Change
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClear}
-          aria-label={`Clear slot ${index + 1}, ${creator.name}`}
-          className="size-7 p-0 text-ink-muted hover:text-ink"
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClear();
+        }}
+        aria-label={`Clear slot ${index + 1}, ${creator.name}`}
+        className="absolute right-2 top-2 size-7 p-0 text-ink-muted hover:text-ink"
+      >
+        <X className="size-4" />
+      </Button>
 
       <div className="mt-6 size-14 shrink-0 overflow-hidden rounded-full bg-stone">
         {creator.avatarUrl ? (
@@ -85,7 +90,18 @@ export function FilledSlot({
         )}
       </div>
 
-      <p className="mt-3 line-clamp-2 text-base font-medium leading-tight">{creator.name}</p>
+      <p className="mt-3 flex items-center justify-center gap-2 text-base font-medium leading-tight">
+        <span
+          aria-hidden
+          className="size-2.5 shrink-0 rounded-full"
+          style={{ background: color }}
+        />
+        <span className="line-clamp-2">{creator.name}</span>
+      </p>
+
+      <p className="mt-0.5 truncate text-sm text-ink-muted">
+        {creator.handle ? `@${creator.handle}` : "Handle not on file"}
+      </p>
 
       {creator.category ? (
         <span className="mt-2 rounded-full border border-hairline px-2 py-0.5 text-xs text-ink-muted">
@@ -103,6 +119,17 @@ export function FilledSlot({
         )}
       </p>
       <p className="mt-1 text-xs text-ink-muted">Followers across platforms</p>
+
+      <p className="numeral mt-2 text-sm">
+        {creator.engagementRate === null ? (
+          <span className="text-xs text-ink-muted">Engagement not on file</span>
+        ) : (
+          <>
+            {creator.engagementRate.toFixed(1)}%
+            <span className="text-xs text-ink-muted"> engagement</span>
+          </>
+        )}
+      </p>
 
       {creator.platforms.length > 0 ? (
         <ul className="mt-auto flex flex-wrap items-center justify-center gap-2 pt-4">
@@ -128,7 +155,7 @@ export function AddMoreColumn({ onOpen }: { onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       aria-label="Add another creator to compare"
-      className="flex min-h-[56px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-hairline bg-surface p-3 text-ink-muted transition-colors hover:border-ink/30 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:min-h-[280px] lg:w-[88px] lg:shrink-0"
+      className="flex min-h-[56px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-hairline bg-surface p-3 text-ink-muted transition-colors hover:border-ink/30 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:min-h-[280px] lg:w-[max(88px,calc(var(--slot-width,220px)/3))] lg:shrink-0"
     >
       <Plus className="size-5" strokeWidth={1.5} />
       <span className="text-xs">Add more</span>

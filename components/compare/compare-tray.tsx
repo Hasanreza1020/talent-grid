@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,10 +41,14 @@ function useSummaries(slugs: string[]) {
  * product with a shadow, which is what lifts it off the page.
  */
 export function CompareTray() {
+  const pathname = usePathname();
   const { slugs, remove, clear, pending, resolvePending, cancelPending } = useCompare();
   const { data: summaries = [] } = useSummaries(slugs);
 
   if (slugs.length === 0) return null;
+  // On /compare the slots are this, in full. Two bars pinned to the bottom of
+  // a phone is one too many, and the second one says less.
+  if (pathname === "/compare") return null;
 
   const ordered = slugs
     .map((slug) => summaries.find((summary) => summary.slug === slug))

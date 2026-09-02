@@ -309,7 +309,9 @@ export function CreatorPicker({
         <div className="min-h-0 flex-1 overflow-y-auto px-5">
           {results.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-base">No creators match these filters</p>
+              <p className="text-base">
+                No creators match these filters. Try widening the follower range.
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -391,7 +393,7 @@ export function CreatorPicker({
 
                     <div className="shrink-0 pl-1">
                       {taken ? (
-                        <span className="text-xs text-ink-muted">Added</span>
+                        <span className="text-xs text-ink-muted">Already added</span>
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => onSelect(creator)}>
                           Select

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AddMoreColumn, EmptySlot, FilledSlot } from "./creator-slot";
 import { CreatorPicker, type PickerFacets } from "./creator-picker";
-import { CompareReport } from "./compare-report";
+import { CompareReport, SERIES_COLORS } from "./compare-report";
 import { useCompare, COMPARE_MAX, COMPARE_MIN } from "./compare-context";
 import type { CompareSubject } from "@/lib/compare-page/subjects";
 
@@ -35,7 +35,7 @@ export function CompareBuilder({
   const { slugs, add, remove } = useCompare();
 
   const [pickerFor, setPickerFor] = useState<number | null>(null);
-  const [reportFor, setReportFor] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const hydrated = useRef(false);
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -60,7 +60,8 @@ export function CompareBuilder({
     for (const slug of fromUrl) {
       if (!slugs.includes(slug)) add(slug, bySlug.get(slug)!.name);
     }
-    if (fromUrl.length >= COMPARE_MIN) setReportFor(fromUrl.join(","));
+    // A pasted link is a request to see the comparison, not to rebuild it.
+    if (fromUrl.length >= COMPARE_MIN) setRevealed(true);
   }, [searchParams, bySlug, slugs, add]);
 
   // Keep the link in step with the slots without stacking history entries.
@@ -82,10 +83,11 @@ export function CompareBuilder({
   const slots = Array.from({ length: slotCount }, (_, index) => selected[index] ?? null);
   const canAddMore = selected.length >= slotCount && slotCount < COMPARE_MAX;
 
-  const filledCount = selected.length;
-  const ready = filledCount >= COMPARE_MIN;
-  const currentKey = selected.map((creator) => creator.slug).join(",");
-  const reportVisible = reportFor !== null && reportFor === currentKey && ready;
+  const ready = selected.length >= COMPARE_MIN;
+  // Once revealed the report stays, and follows the slots. Swapping a creator
+  // updates it in place rather than sending the reader back to press Compare
+  // again for a comparison they have already asked for.
+  const reportVisible = revealed && ready;
 
   const onSelect = useCallback(
     (index: number, creator: CompareSubject) => {
@@ -100,7 +102,7 @@ export function CompareBuilder({
   );
 
   const compare = () => {
-    setReportFor(currentKey);
+    setRevealed(true);
     window.requestAnimationFrame(() => {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.getElementById("compare-report")?.scrollIntoView({
@@ -141,6 +143,7 @@ export function CompareBuilder({
                   <FilledSlot
                     creator={creator}
                     index={index}
+                    color={SERIES_COLORS[index % SERIES_COLORS.length]}
                     slotRef={(node) => {
                       slotRefs.current[index] = node;
                     }}
@@ -158,21 +161,25 @@ export function CompareBuilder({
         {canAddMore ? <AddMoreColumn onOpen={() => setPickerFor(slotCount)} /> : null}
       </div>
 
-      <div className="mt-8 flex flex-col items-center">
-        {/* The one orange control on the screen. Disabled it goes neutral
-            rather than a faded orange, so a half-finished comparison never
-            looks like the accent is simply dim. */}
-        <Button
-          size="lg"
-          disabled={!ready}
-          onClick={compare}
-          className="rounded-lg px-8 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-ink-muted disabled:opacity-100"
-        >
-          Compare
-        </Button>
-        {!ready ? (
-          <p className="mt-2 text-sm text-ink-muted">Pick at least two creators</p>
-        ) : null}
+      {/* Sticks to the bottom of the viewport below lg so the action is never
+          scrolled off; an ordinary centred button from lg up. */}
+      <div className="max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-40 max-lg:border-t max-lg:border-hairline max-lg:bg-canvas/95 max-lg:p-4 max-lg:backdrop-blur lg:mt-8">
+        <div className="flex flex-col items-center">
+          {/* The one orange control on the page. Disabled it goes neutral
+              rather than a faded orange, so a half-finished comparison never
+              looks like the accent is simply dim. */}
+          <Button
+            size="lg"
+            disabled={!ready}
+            onClick={compare}
+            className="rounded-lg px-8 max-lg:w-full disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-ink-muted disabled:opacity-100"
+          >
+            Compare
+          </Button>
+          {!ready ? (
+            <p className="mt-2 text-sm text-ink-muted">Pick at least two creators</p>
+          ) : null}
+        </div>
       </div>
 
       {reportVisible ? (

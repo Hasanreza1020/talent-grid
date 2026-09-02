@@ -19,15 +19,15 @@ function frame(height: number) {
 
 export const FollowersByPlatform = dynamic(
   () => import("./compare-charts-impl").then((mod) => mod.FollowersByPlatform),
-  { ssr: false, loading: frame(240) },
+  { ssr: false, loading: frame(280) },
 );
 
-export const PerCreatorBars = dynamic(
-  () => import("./compare-charts-impl").then((mod) => mod.PerCreatorBars),
-  { ssr: false, loading: frame(220) },
-);
-
-export const ScoreBars = dynamic(
-  () => import("./compare-charts-impl").then((mod) => mod.ScoreBars),
+export const HorizontalBars = dynamic(
+  () => import("./compare-charts-impl").then((mod) => mod.HorizontalBars),
   { ssr: false, loading: frame(160) },
+);
+
+export const DotPlot = dynamic(
+  () => import("./compare-charts-impl").then((mod) => mod.DotPlot),
+  { ssr: false, loading: frame(140) },
 );
