@@ -3,6 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/db/user";
 import { buildPlan, parseBrief } from "@/lib/strategiser/pipeline";
+import {
+  gatherBrief,
+  MAX_QUESTIONS,
+  type GatherResult,
+  type Turn,
+} from "@/lib/strategiser/gather";
 import { PLATFORMS, type Platform } from "@/lib/types";
 import { MAX_CREATORS, type Brief, type ParsedBrief, type Plan } from "@/lib/strategiser/types";
 
@@ -71,6 +77,35 @@ async function runsToday(userId: string): Promise<number | null> {
 export type PlanResult =
   | { ok: true; plan: Plan; brief: Brief }
   | { ok: false; error: string };
+
+/**
+ * Step 0, exposed to the client.
+ *
+ * The thread is re-sent whole each turn rather than held on the server: it is
+ * a handful of short strings, and a conversation that survives a refresh is
+ * worth more than the bytes saved.
+ */
+export async function gatherAction(
+  thread: Turn[],
+  asked: number,
+): Promise<GatherResult | { status: "error"; message: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { status: "error", message: "Your session has expired. Sign in again." };
+
+  const trimmed = thread
+    .filter((turn) => typeof turn?.text === "string" && turn.text.trim())
+    .slice(-12)
+    .map((turn) => ({
+      role: turn.role === "assistant" ? ("assistant" as const) : ("user" as const),
+      text: turn.text.trim().slice(0, 1200),
+    }));
+
+  if (trimmed.length === 0) {
+    return { status: "error", message: "Describe the campaign first." };
+  }
+
+  return gatherBrief(trimmed, Math.max(0, Math.min(asked, MAX_QUESTIONS)));
+}
 
 export async function generatePlan(input: Brief): Promise<PlanResult> {
   const user = await getCurrentUser();

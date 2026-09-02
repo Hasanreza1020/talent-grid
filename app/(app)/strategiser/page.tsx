@@ -25,22 +25,15 @@ export default async function StrategiserPage() {
     .map((row) => metrics.get(row.id)?.engagement.value ?? null)
     .filter((rate): rate is number => rate !== null);
 
+  // The headline lives in the prompt card, not here: the card is the centre of
+  // this page and a second heading above it would compete with its own.
   return (
-    <div className="mx-auto max-w-[64rem] px-4 py-10 sm:px-6">
-      <h1 className="font-display text-xl">Strategiser</h1>
-      <p className="mt-2 max-w-[40rem] text-sm text-ink-muted">
-        Describe the campaign and get a costed shortlist. Every creator, figure and
-        price comes from the roster; the strategist only chooses among them and says
-        why.
-      </p>
-
-      <div className="mt-10">
-        <Strategiser
-          cheapestRate={rates.length ? Math.min(...rates) : null}
-          rosterSize={rows.length}
-          rosterEngagement={rosterEngagement}
-        />
-      </div>
+    <div className="mx-auto max-w-[64rem] px-4 py-16 sm:px-6 sm:py-24">
+      <Strategiser
+        cheapestRate={rates.length ? Math.min(...rates) : null}
+        rosterSize={rows.length}
+        rosterEngagement={rosterEngagement}
+      />
     </div>
   );
 }

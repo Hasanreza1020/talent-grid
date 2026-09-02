@@ -66,13 +66,10 @@ export function PlanView({
   if (initial.picks.length === 0) {
     return (
       <div className="space-y-4 py-12">
-        <p className="text-base">
-          No creators match that brief closely enough to build a plan.
-        </p>
+        <p className="text-base">Nothing in the roster matched that brief.</p>
         <p className="max-w-[40rem] text-sm text-ink-muted">
-          Every creator in a plan needs a rate on file, because a shortlist that
-          cannot be costed is not a plan. Widening the platforms or raising the
-          budget is usually enough.
+          Widening the platforms, or describing the audience more loosely, is usually
+          enough.
         </p>
         <Button variant="outline" size="sm" onClick={onStartOver}>
           Change the brief
@@ -130,6 +127,21 @@ export function PlanView({
           />
         </dl>
 
+        {/*
+          Most of this roster has no rate card yet, so the budget bar usually
+          covers only part of the shortlist. Saying so is the difference
+          between a total and a misleading total.
+        */}
+        {totals.unpricedCount > 0 ? (
+          <p className="text-sm text-ink-muted">
+            {totals.pricedCount === 0
+              ? "None of these creators has a rate on file, so this plan cannot be costed yet."
+              : `Covers ${totals.pricedCount} of ${picks.length} creators. The other ${totals.unpricedCount} ${
+                  totals.unpricedCount === 1 ? "has" : "have"
+                } no rate on file and ${totals.unpricedCount === 1 ? "is" : "are"} not counted above.`}
+          </p>
+        ) : null}
+
         {over ? (
           <Button
             variant="outline"
@@ -173,7 +185,14 @@ export function PlanView({
             <CreatorCard data={toCardData(pick.candidate)} />
 
             <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-              <Figure label="Price per post" value={formatBdt(pick.candidate.ratePerPost)} />
+              <Figure
+                label="Price per post"
+                value={
+                  pick.candidate.ratePerPost === null
+                    ? "Not on file"
+                    : formatBdt(pick.candidate.ratePerPost)
+                }
+              />
               <Figure
                 label="Agency score"
                 value={
@@ -189,6 +208,18 @@ export function PlanView({
               // commentary from a model rather than something on record.
               <p className="border-l-2 border-hairline pl-3 text-sm italic text-ink-muted">
                 {pick.reason}
+              </p>
+            ) : null}
+
+            {pick.context ? (
+              // Kept visibly apart from everything above it. This did not come
+              // from the roster, and a reader deciding on a booking has to be
+              // able to tell which of these lines the database stands behind.
+              <p className="rounded-md bg-muted px-3 py-2 text-xs leading-relaxed text-ink-muted">
+                <span className="font-medium text-ink">Gemini&rsquo;s own knowledge</span>
+                <span className="block">
+                  {pick.context} Not from your records &mdash; verify before quoting it.
+                </span>
               </p>
             ) : null}
 
@@ -242,7 +273,11 @@ export function PlanView({
                     >
                       <span className="min-w-0 truncate">{option.name}</span>
                       <span className="flex shrink-0 items-center gap-3 text-xs text-ink-muted">
-                        <span className="numeral">{formatBdt(option.ratePerPost)}</span>
+                        <span className="numeral">
+                          {option.ratePerPost === null
+                            ? "No rate"
+                            : formatBdt(option.ratePerPost)}
+                        </span>
                         <span className="numeral">
                           {option.engagementRate === null
                             ? NO_DATA

@@ -51,7 +51,8 @@ export type Candidate = {
   platforms: { platform: Platform; followers: number | null }[];
   totalReach: number | null;
   engagementRate: number | null;
-  ratePerPost: number;
+  /** Null when no rate card is on file, which is most of the roster today. */
+  ratePerPost: number | null;
   agencyScore: number | null;
   /** Newest snapshot date. Used to flag a stale figure, never to hide one. */
   capturedOn: string | null;
@@ -64,12 +65,20 @@ export type Pick = {
   candidate: Candidate;
   /** The model's one line. Empty when the plain ranking produced this. */
   reason: string;
+  /**
+   * Background the model supplied from its own training, not from our tables.
+   * Rendered separately and labelled as such, because it is unverified.
+   */
+  context: string;
   role: SelectionRole;
 };
 
 export type PlanTotals = {
   spend: number;
   budget: number;
+  /** How many of the picks actually have a price, so spend can be read fairly. */
+  pricedCount: number;
+  unpricedCount: number;
   /** Positive means money left, negative means over. */
   remaining: number;
   combinedReach: number | null;
@@ -90,3 +99,37 @@ export type Plan = {
   /** True when the model was unavailable and this is a plain ranking. */
   degraded: boolean;
 };
+
+/* -------------------------------------------------------------------------- */
+/* Step 0: the conversational brief                                            */
+/* -------------------------------------------------------------------------- */
+
+/** The four things worth interrupting someone for. Everything else is inferred. */
+export type Slots = {
+  brandDescription: string | null;
+  objective: string | null;
+  budgetBdt: number | null;
+  creatorCount: number | null;
+};
+
+export const EMPTY_SLOTS: Slots = {
+  brandDescription: null,
+  objective: null,
+  budgetBdt: null,
+  creatorCount: null,
+};
+
+export type Turn = { role: "user" | "assistant"; text: string };
+
+export const MAX_QUESTIONS = 3;
+
+export type GatherResult =
+  | {
+      status: "need_info";
+      captured: Slots;
+      question: string;
+      quickReplies: string[];
+      assumptions: string[];
+    }
+  | { status: "ready"; captured: Slots; assumptions: string[] }
+  | { status: "unusable"; captured: Slots };

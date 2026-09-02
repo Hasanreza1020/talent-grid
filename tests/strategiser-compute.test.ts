@@ -29,7 +29,7 @@ function candidate(overrides: Partial<Candidate> & { id: string }): Candidate {
   };
 }
 
-const pick = (c: Candidate): Pick => ({ candidate: c, reason: "", role: "anchor" });
+const pick = (c: Candidate): Pick => ({ candidate: c, reason: "", context: "", role: "anchor" });
 
 describe("computeTotals", () => {
   it("sums spend and reports what is left", () => {
@@ -141,7 +141,7 @@ describe("fitToBudget", () => {
 describe("swapPick", () => {
   it("exchanges a pick for a bench candidate and keeps the role", () => {
     const picks: Pick[] = [
-      { candidate: candidate({ id: "out" }), reason: "r", role: "niche" },
+      { candidate: candidate({ id: "out" }), reason: "r", context: "", role: "niche" },
     ];
     const bench = [candidate({ id: "in" })];
     const result = swapPick(picks, bench, "out", "in");
@@ -151,7 +151,9 @@ describe("swapPick", () => {
   });
 
   it("is a no-op when either side is unknown", () => {
-    const picks: Pick[] = [{ candidate: candidate({ id: "a" }), reason: "", role: "anchor" }];
+    const picks: Pick[] = [
+      { candidate: candidate({ id: "a" }), reason: "", context: "", role: "anchor" },
+    ];
     expect(swapPick(picks, [], "a", "ghost").picks).toBe(picks);
   });
 });
@@ -167,5 +169,51 @@ describe("poolScore", () => {
 
   it("sorts a creator with neither figure last rather than dropping it", () => {
     expect(poolScore(candidate({ id: "bare" }))).toBe(0);
+  });
+});
+
+describe("a roster with follower counts and little else", () => {
+  it("ranks on reach when engagement and score are missing for everyone", () => {
+    const big = candidate({ id: "big", totalReach: 1_000_000, ratePerPost: null });
+    const small = candidate({ id: "small", totalReach: 10_000, ratePerPost: null });
+    expect(poolScore(big)).toBeGreaterThan(poolScore(small));
+    expect(plainRanking([small, big], 1, 50_000).map((c) => c.id)).toEqual(["big"]);
+  });
+
+  it("keeps creators with no rate rather than dropping them", () => {
+    const pool = [
+      candidate({ id: "unpriced", ratePerPost: null, totalReach: 500_000 }),
+      candidate({ id: "priced", ratePerPost: 20_000, totalReach: 100_000 }),
+    ];
+    const chosen = plainRanking(pool, 2, 50_000);
+    expect(chosen.map((c) => c.id).sort()).toEqual(["priced", "unpriced"]);
+  });
+
+  it("never treats a missing rate as free when summing spend", () => {
+    const totals = computeTotals(
+      [
+        pick(candidate({ id: "a", ratePerPost: 20_000 })),
+        pick(candidate({ id: "b", ratePerPost: null })),
+      ],
+      100_000,
+      [],
+    );
+    expect(totals.spend).toBe(20_000);
+    expect(totals.pricedCount).toBe(1);
+    expect(totals.unpricedCount).toBe(1);
+  });
+
+  it("prefers a costable plan, taking unpriced creators only to fill", () => {
+    const pool = [
+      candidate({ id: "unpriced", ratePerPost: null, totalReach: 900_000 }),
+      candidate({ id: "priced", ratePerPost: 10_000, totalReach: 100_000 }),
+    ];
+    expect(plainRanking(pool, 1, 50_000).map((c) => c.id)).toEqual(["priced"]);
+  });
+
+  it("will not swap a known cost for an unknown one when fitting to budget", () => {
+    const picks = [pick(candidate({ id: "dear", ratePerPost: 80_000 }))];
+    const bench = [candidate({ id: "unpriced", ratePerPost: null })];
+    expect(fitToBudget(picks, bench, 10_000).swapped).toBeNull();
   });
 });

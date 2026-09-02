@@ -20,19 +20,37 @@ export function median(values: number[]): number | null {
 }
 
 /**
- * The blend the pool is ordered by before the model sees it, so a ranking call
- * that does nothing clever still returns something defensible. Engagement is
- * weighted above the agency score because it is measured rather than assigned;
- * a creator with neither sorts last rather than being dropped.
+ * The blend the pool is ordered by before the model sees it.
+ *
+ * Engagement is weighted above the agency score because it is measured rather
+ * than assigned. Reach is in the blend, on a log scale, because for most of
+ * this roster it is the only figure on file — without it every candidate
+ * scores zero and the pool arrives in arbitrary order. Log rather than linear,
+ * so one mega account does not flatten everything beneath it.
  */
 export function poolScore(candidate: Candidate): number {
-  const engagement = candidate.engagementRate ?? 0;
-  const agency = candidate.agencyScore ?? 0;
-  return engagement * 10 + agency * 0.4;
+  const engagement = (candidate.engagementRate ?? 0) * 10;
+  const agency = (candidate.agencyScore ?? 0) * 0.4;
+  const reach =
+    candidate.totalReach && candidate.totalReach > 0
+      ? Math.log10(candidate.totalReach) * 2
+      : 0;
+  return engagement + agency + reach;
+}
+
+/** The rates that exist. A missing rate is unknown, never zero. */
+export function pricedRates(candidates: { ratePerPost: number | null }[]): number[] {
+  return candidates
+    .map((entry) => entry.ratePerPost)
+    .filter((rate): rate is number => rate !== null);
 }
 
 export function computeTotals(picks: Pick[], budget: number, rosterEngagement: number[]): PlanTotals {
-  const spend = picks.reduce((sum, pick) => sum + pick.candidate.ratePerPost, 0);
+  // Only priced creators contribute to spend. One with no rate on file costs
+  // an unknown amount, not nothing, so the count is reported beside the total
+  // rather than folded into it.
+  const rates = pricedRates(picks.map((pick) => pick.candidate));
+  const spend = rates.reduce((sum, rate) => sum + rate, 0);
 
   const reaches = picks
     .map((pick) => pick.candidate.totalReach)
@@ -48,6 +66,8 @@ export function computeTotals(picks: Pick[], budget: number, rosterEngagement: n
   return {
     spend: Math.round(spend),
     budget: Math.round(budget),
+    pricedCount: rates.length,
+    unpricedCount: picks.length - rates.length,
     remaining: Math.round(budget - spend),
     combinedReach: combinedReach === null ? null : Math.round(combinedReach),
     costPerThousandReach:
@@ -78,18 +98,30 @@ export function fitToBudget(
   bench: Candidate[],
   budget: number,
 ): { picks: Pick[]; bench: Candidate[]; swapped: { out: string; in: string } | null } {
-  const spend = picks.reduce((sum, pick) => sum + pick.candidate.ratePerPost, 0);
+  const spend = pricedRates(picks.map((pick) => pick.candidate)).reduce((a, b) => a + b, 0);
   if (spend <= budget || picks.length === 0) return { picks, bench, swapped: null };
 
-  const dearestIndex = picks.reduce(
-    (best, pick, index) =>
-      pick.candidate.ratePerPost > picks[best].candidate.ratePerPost ? index : best,
-    0,
-  );
+  // Only a priced pick can be swapped out for a saving, and only a priced
+  // bench candidate can come in: trading a known cost for an unknown one moves
+  // the plan without telling anyone which way.
+  let dearestIndex = -1;
+  picks.forEach((pick, index) => {
+    const rate = pick.candidate.ratePerPost;
+    if (rate === null) return;
+    if (dearestIndex === -1 || rate > (picks[dearestIndex].candidate.ratePerPost ?? 0)) {
+      dearestIndex = index;
+    }
+  });
+  if (dearestIndex === -1) return { picks, bench, swapped: null };
+
   const dearest = picks[dearestIndex];
+  const dearestRate = dearest.candidate.ratePerPost as number;
 
   const cheaper = bench
-    .filter((candidate) => candidate.ratePerPost < dearest.candidate.ratePerPost)
+    .filter(
+      (candidate): candidate is Candidate & { ratePerPost: number } =>
+        candidate.ratePerPost !== null && candidate.ratePerPost < dearestRate,
+    )
     .sort((a, b) => b.ratePerPost - a.ratePerPost)[0];
 
   if (!cheaper) return { picks, bench, swapped: null };
@@ -100,6 +132,7 @@ export function fitToBudget(
           candidate: cheaper,
           role: pick.role,
           reason: "Swapped in to bring the plan inside budget.",
+          context: "",
         }
       : pick,
   );
@@ -129,7 +162,12 @@ export function swapPick(
   return {
     picks: picks.map((pick) =>
       pick.candidate.id === outId
-        ? { candidate: incoming, role: pick.role, reason: "Chosen by hand from the shortlist." }
+        ? {
+            candidate: incoming,
+            role: pick.role,
+            reason: "Chosen by hand from the shortlist.",
+            context: "",
+          }
         : pick,
     ),
     bench: [
@@ -153,19 +191,31 @@ export function plainRanking(
   const chosen: Candidate[] = [];
   let spend = 0;
 
+  // Priced creators first, best blend down, taking what the budget covers.
   for (const candidate of ordered) {
     if (chosen.length >= creatorCount) break;
+    if (candidate.ratePerPost === null) continue;
     if (spend + candidate.ratePerPost > budget) continue;
     chosen.push(candidate);
     spend += candidate.ratePerPost;
   }
 
-  // Budget too tight for a full set: fill the rest with the cheapest available
-  // so the user sees the overage rather than a short list with no explanation.
+  // Then the unpriced, best blend down. They cannot be costed, so they cannot
+  // break the budget either; the plan reports how many of them it contains.
+  if (chosen.length < creatorCount) {
+    for (const candidate of ordered) {
+      if (chosen.length >= creatorCount) break;
+      if (candidate.ratePerPost !== null) continue;
+      chosen.push(candidate);
+    }
+  }
+
+  // Still short: the budget is too tight even for the cheapest, so show them
+  // and let the overage be visible rather than returning a shorter list.
   if (chosen.length < creatorCount) {
     const rest = ordered
       .filter((candidate) => !chosen.some((entry) => entry.id === candidate.id))
-      .sort((a, b) => a.ratePerPost - b.ratePerPost);
+      .sort((a, b) => (a.ratePerPost ?? Infinity) - (b.ratePerPost ?? Infinity));
     chosen.push(...rest.slice(0, creatorCount - chosen.length));
   }
 
