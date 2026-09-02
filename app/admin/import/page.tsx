@@ -3,7 +3,7 @@ import { getCurrentUser, isAdmin } from "@/lib/db/user";
 import { listCategories } from "@/lib/db/categories";
 import { ImportWizard } from "@/components/admin/import-wizard";
 
-export const metadata = { title: "Import — Talent Grid" };
+export const metadata = { title: "Import — Grid" };
 
 export default async function ImportPage() {
   const user = await getCurrentUser();

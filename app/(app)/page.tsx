@@ -12,7 +12,7 @@ import { SectionHeading } from "@/components/ui-bits";
 import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
 import { PLATFORMS, PLATFORM_LABEL, TIERS, TIER_LABEL, TIER_RANGE_LABEL } from "@/lib/types";
 
-export const metadata = { title: "Talent Grid" };
+export const metadata = { title: "Grid" };
 
 export default async function HomePage() {
   const [rows, categories] = await Promise.all([listDirectory(), listCategoryTree()]);

@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 
-export const metadata = { title: "Admin — Talent Grid" };
+export const metadata = { title: "Admin — Grid" };
 
 export default async function AdminDashboardPage() {
   const rows = await listDirectory({ includeArchived: true });

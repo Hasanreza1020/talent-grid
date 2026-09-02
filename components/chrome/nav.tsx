@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/chrome/wordmark";
 import { Button } from "@/components/ui/button";
 import type { AppUser } from "@/lib/types";
 import { USER_ROLE_LABEL } from "@/lib/types";
@@ -24,9 +25,7 @@ export function Nav({ user }: { user: AppUser }) {
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[80rem] items-center gap-8 px-6">
-        <Link href="/" className="font-display text-lg leading-none">
-          Talent Grid
-        </Link>
+        <Wordmark href="/" />
 
         <nav className="flex items-center gap-6">
           {links.map((link) => {

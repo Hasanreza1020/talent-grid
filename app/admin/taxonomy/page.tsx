@@ -2,7 +2,7 @@ import { listCategories, listTags } from "@/lib/db/categories";
 import { createClient } from "@/lib/supabase/server";
 import { TaxonomyManager } from "@/components/admin/taxonomy-manager";
 
-export const metadata = { title: "Categories and tags — Talent Grid" };
+export const metadata = { title: "Categories and tags — Grid" };
 
 export default async function TaxonomyPage() {
   const supabase = await createClient();

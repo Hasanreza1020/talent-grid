@@ -28,7 +28,7 @@ const bengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "Talent Grid",
+  title: "Grid",
   description: "The creator database.",
 };
 

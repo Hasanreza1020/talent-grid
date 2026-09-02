@@ -40,7 +40,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const creator = await getCreatorDetail(slug);
-  return { title: creator ? `${creator.displayName} — Talent Grid` : "Creator — Talent Grid" };
+  return { title: creator ? `${creator.displayName} — Grid` : "Creator — Grid" };
 }
 
 const BENCHMARK_AXES = [

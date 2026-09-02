@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 /* ---------------------------------------------------------------------------
-   Talent Grid design tokens.
+   Grid design tokens.
 
    The palette is fixed by the build spec. The orange is a pointer, not a
    theme: it is permitted on the active nav underline, the primary button, the

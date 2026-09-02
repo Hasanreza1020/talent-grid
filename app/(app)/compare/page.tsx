@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui-bits";
 import { Button } from "@/components/ui/button";
 import { COMPARE_MIN } from "@/components/compare/compare-context";
 
-export const metadata = { title: "Compare — Talent Grid" };
+export const metadata = { title: "Compare — Grid" };
 
 export default async function ComparePage({
   searchParams,

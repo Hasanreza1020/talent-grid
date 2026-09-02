@@ -3,7 +3,7 @@ import { CreatorForm } from "@/components/admin/creator-form";
 import { Notice } from "@/components/ui-bits";
 import type { CreatorFormValues } from "@/lib/schemas";
 
-export const metadata = { title: "New creator — Talent Grid" };
+export const metadata = { title: "New creator — Grid" };
 
 const BLANK: CreatorFormValues = {
   identity: {

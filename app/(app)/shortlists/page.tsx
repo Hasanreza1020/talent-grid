@@ -4,7 +4,7 @@ import { CreateShortlistDialog } from "@/components/shortlist/create-shortlist-d
 import { EmptyState, SectionHeading } from "@/components/ui-bits";
 import { formatDate, formatNumber } from "@/lib/format";
 
-export const metadata = { title: "Shortlists — Talent Grid" };
+export const metadata = { title: "Shortlists — Grid" };
 
 export default async function ShortlistsPage() {
   const shortlists = await listShortlists();

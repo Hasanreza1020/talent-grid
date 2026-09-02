@@ -4,7 +4,7 @@ import { getCurrentUser, isAdmin, isEditor } from "@/lib/db/user";
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export const metadata: Metadata = {
-  title: "Talent Grid CMS",
+  title: "Grid CMS",
   // The back office has no business being indexed.
   robots: { index: false, follow: false },
 };

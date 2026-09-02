@@ -9,7 +9,7 @@ import { EmptyState, SectionHeading } from "@/components/ui-bits";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const shortlist = await getShortlist(id);
-  return { title: shortlist ? `${shortlist.name} — Talent Grid` : "Shortlist — Talent Grid" };
+  return { title: shortlist ? `${shortlist.name} — Grid` : "Shortlist — Grid" };
 }
 
 export default async function ShortlistDetailPage({

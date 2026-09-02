@@ -1,6 +1,7 @@
 import { LoginForm } from "./login-form";
+import { Wordmark } from "@/components/chrome/wordmark";
 
-export const metadata = { title: "Sign in — Talent Grid" };
+export const metadata = { title: "Sign in — Grid" };
 
 export default async function LoginPage({
   searchParams,
@@ -11,7 +12,7 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-[26rem] flex-col justify-center px-6 py-16">
-      <p className="text-sm text-ink-muted">Talent Grid</p>
+      <Wordmark />
       <h1 className="mt-2 font-display text-xl">
         {params.mode === "signup" ? "Create an account" : "Sign in"}
       </h1>

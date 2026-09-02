@@ -10,6 +10,7 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
+import { Wordmark } from "@/components/chrome/wordmark";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/app/login/actions";
@@ -44,12 +45,7 @@ export function AdminShell({
     <div className="flex min-h-dvh bg-canvas">
       <aside className="sticky top-0 hidden h-dvh w-[15rem] shrink-0 flex-col border-r border-hairline bg-ink text-white lg:flex">
         <div className="border-b border-white/10 px-5 py-5">
-          <Link href="/admin" className="block">
-            <span className="font-display text-lg leading-none">Talent Grid</span>
-            <span className="mt-1 block text-xs uppercase tracking-wide text-white/45">
-              CMS
-            </span>
-          </Link>
+          <Wordmark href="/admin" suffix="CMS" tone="dark" />
         </div>
 
         <nav className="flex-1 space-y-0.5 p-3">
@@ -107,9 +103,7 @@ export function AdminShell({
             scrollable strip rather than a hamburger that hides them. */}
         <div className="sticky top-0 z-30 border-b border-hairline bg-ink text-white lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <Link href="/admin" className="font-display text-base">
-              Talent Grid CMS
-            </Link>
+            <Wordmark href="/admin" suffix="CMS" tone="dark" />
             <form action={signOut}>
               <Button
                 type="submit"

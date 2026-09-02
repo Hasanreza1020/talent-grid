@@ -4,7 +4,7 @@ import { listCategories } from "@/lib/db/categories";
 import { CreatorGrid } from "@/components/admin/creator-grid";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Creator management — Talent Grid" };
+export const metadata = { title: "Creator management — Grid" };
 
 export default async function AdminCreatorsPage() {
   const [rows, categories] = await Promise.all([

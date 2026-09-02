@@ -3,7 +3,7 @@ import { getCurrentUser, isAdmin, listUsers } from "@/lib/db/user";
 import { UserTable } from "@/components/admin/user-table";
 import { SectionHeading } from "@/components/ui-bits";
 
-export const metadata = { title: "Users — Talent Grid" };
+export const metadata = { title: "Users — Grid" };
 
 export default async function AdminUsersPage() {
   const current = await getCurrentUser();

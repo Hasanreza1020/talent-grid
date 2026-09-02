@@ -11,7 +11,7 @@ import { SectionHeading } from "@/components/ui-bits";
 import { PLATFORM_LABEL } from "@/lib/types";
 import type { CreatorFormValues } from "@/lib/schemas";
 
-export const metadata = { title: "Edit creator — Talent Grid" };
+export const metadata = { title: "Edit creator — Grid" };
 
 export default async function EditCreatorPage({
   params,

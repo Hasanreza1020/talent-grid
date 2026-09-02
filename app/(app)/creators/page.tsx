@@ -21,7 +21,7 @@ import { ViewControls } from "@/components/browse/view-controls";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 
-export const metadata = { title: "Creators — Talent Grid" };
+export const metadata = { title: "Creators — Grid" };
 
 export default async function BrowsePage({
   searchParams,
