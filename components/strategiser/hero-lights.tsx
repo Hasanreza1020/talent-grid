@@ -3,16 +3,16 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The background for the whole route: two lights, a grid, and grain.
+ * The whole background: one soft glow behind the orb, and grain.
  *
- * The grid spans the entire page so the scroll from prompt to shortlist has
- * one continuous structure and no seam. The lights are confined to the top of
- * the page and, once results are on screen, drop to a little over a third of
- * their brightness and stop moving altogether — a client reads prices in that
- * region, and light drifting behind small figures makes them tiring to read
- * and the data feel less trustworthy.
+ * There is nothing else. Earlier builds layered drifting lights and a grid
+ * here, which competed with the orb and turned the page brown; all the colour
+ * and all the self-starting motion now belong to the orb alone.
  *
- * No JavaScript animation loop. The only runtime work is an opacity variable
+ * The grain is not decoration — it is the only thing stopping the glow banding
+ * into visible rings on eight-bit panels.
+ *
+ * No JavaScript animation loop: the runtime work is one opacity variable
  * written on scroll and a class toggled when the tab is hidden.
  */
 export function HeroLights({ working, calm }: { working: boolean; calm: boolean }) {
@@ -26,8 +26,7 @@ export function HeroLights({ working, calm }: { working: boolean; calm: boolean 
     const apply = () => {
       frame = 0;
       const height = window.innerHeight || 1;
-      // Never all the way to nothing: the grid carries the long scroll.
-      const fade = Math.max(0.35, 1 - window.scrollY / height);
+      const fade = Math.max(0.3, 1 - window.scrollY / height);
       node.style.setProperty("--sg-fade", fade.toFixed(3));
     };
     const onScroll = () => {
@@ -58,22 +57,11 @@ export function HeroLights({ working, calm }: { working: boolean; calm: boolean 
     <div
       ref={ref}
       aria-hidden
-      className={`sg-hero pointer-events-none absolute inset-0 ${working ? "sg-working" : ""} ${
-        calm ? "sg-calm" : ""
-      }`}
+      className={`sg-hero pointer-events-none absolute inset-0 overflow-hidden ${
+        working ? "sg-working" : ""
+      } ${calm ? "sg-calm" : ""}`}
     >
-      {/* Lights stay in the first screen; the page below them is plain dark. */}
-      <div className="sg-lights h-dvh" style={{ bottom: "auto" }}>
-        <span className="sg-blob sg-blob-a" />
-        <span className="sg-blob sg-blob-c" />
-      </div>
-
-      <div className="sg-grid">
-        <div className="sg-grid-lines">
-          <div className="sg-scan" />
-        </div>
-      </div>
-
+      <div className="sg-ambient" />
       <div className="sg-grain" />
     </div>
   );

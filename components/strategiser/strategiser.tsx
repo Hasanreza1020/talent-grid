@@ -40,6 +40,7 @@ export function Strategiser({
   const [result, setResult] = useState<{ plan: Plan; brief: Brief } | null>(null);
   const [stage, setStage] = useState(0);
   const [building, setBuilding] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const reset = () => {
@@ -205,12 +206,16 @@ export function Strategiser({
       Fills everything below the nav, so the dark band ends at the fold rather
       than partway down with the page's own canvas showing beneath it.
     */
-    <section className="sg-page relative isolate -mt-14 flex min-h-dvh flex-col overflow-hidden pt-14">
+    <section
+      className={`sg-page relative isolate -mt-14 flex min-h-dvh flex-col overflow-hidden pt-14 ${
+        building ? "sg-working" : ""
+      } ${focused ? "sg-focus" : ""}`}
+    >
       <HeroLights working={building} calm={false} />
 
       {/* Nudged above true centre: an optically centred composition sits a
           little high, and it leaves less dead space under the card. */}
-      <div className="relative mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center px-4 pb-24 pt-10 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center px-4 pb-12 pt-8 sm:px-6">
         {phase === "gathering" ? (
           <div className="w-full">
             <ThreadView
@@ -233,6 +238,7 @@ export function Strategiser({
             <PromptCard
               value={draft}
               onChange={setDraft}
+              onFocusChange={setFocused}
               pending={pending}
               rosterSize={rosterSize}
               onSubmit={() => {
