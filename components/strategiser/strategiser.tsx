@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { HANDOFF_KEY, isUsableBrief } from "@/lib/strategiser/copy";
 import { HeroLights } from "./hero-lights";
 import { PromptCard } from "./prompt-card";
 import { StageLabels } from "./stage-labels";
@@ -41,6 +43,8 @@ export function Strategiser({
   const [stage, setStage] = useState(0);
   const [building, setBuilding] = useState(false);
   const [focused, setFocused] = useState(false);
+  const searchParams = useSearchParams();
+  const handedOff = useRef(false);
   const [pending, startTransition] = useTransition();
 
   const reset = () => {
@@ -156,6 +160,42 @@ export function Strategiser({
     });
   };
 
+  /**
+   * A brief written on the home page is waiting in sessionStorage. Read it
+   * once, clear it, and start — the person already pressed send, and asking
+   * them to press it again is the whole thing this avoids.
+   *
+   * Clearing on read is what makes the edge cases behave. Going back leaves
+   * the home box empty rather than re-arming a run that is already going, and
+   * refreshing here shows this page's own empty state rather than replaying a
+   * stale prompt.
+   */
+  useEffect(() => {
+    if (handedOff.current) return;
+    if (searchParams.get("start") !== "1") return;
+    handedOff.current = true;
+
+    let brief: string | null = null;
+    try {
+      brief = window.sessionStorage.getItem(HANDOFF_KEY);
+      window.sessionStorage.removeItem(HANDOFF_KEY);
+    } catch {
+      // Blocked storage: fall through to the ordinary empty state.
+    }
+
+    if (!brief || !isUsableBrief(brief)) return;
+
+    const next: Turn[] = [{ role: "user", text: brief.trim() }];
+    setThread(next);
+    setPhase("gathering");
+    // The orb is already working on the first painted frame, so arriving
+    // reads as a continuation rather than a fresh page that then starts.
+    setBuilding(true);
+    advance(next, 0);
+    // One shot on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   if (phase === "plan" && result) {
     return (
       <div className="sg-page relative -mt-14 min-h-dvh pt-14">
@@ -207,7 +247,7 @@ export function Strategiser({
       than partway down with the page's own canvas showing beneath it.
     */
     <section
-      className={`sg-page relative isolate -mt-14 flex min-h-dvh flex-col overflow-hidden pt-14 ${
+      className={`sg-page sg-fit relative isolate -mt-14 flex flex-col pt-14 ${
         building ? "sg-working" : ""
       } ${focused ? "sg-focus" : ""}`}
     >
@@ -215,7 +255,7 @@ export function Strategiser({
 
       {/* Nudged above true centre: an optically centred composition sits a
           little high, and it leaves less dead space under the card. */}
-      <div className="relative mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center px-4 pb-12 pt-8 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center px-4 py-8 sm:px-6">
         {phase === "gathering" ? (
           <div className="w-full">
             <ThreadView

@@ -21,7 +21,14 @@ export type WallCreator = {
  * dropped entirely under prefers-reduced-motion, where the wall simply sits
  * still and stays fully usable.
  */
-export function PortraitWall({ creators }: { creators: WallCreator[] }) {
+export function PortraitWall({
+  creators,
+  dim = false,
+}: {
+  creators: WallCreator[];
+  /** Held back and low contrast, for use as something for glass to blur. */
+  dim?: boolean;
+}) {
   if (creators.length === 0) return null;
 
   // Enough tiles that a short database still fills a wide screen.
@@ -30,12 +37,18 @@ export function PortraitWall({ creators }: { creators: WallCreator[] }) {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 select-none overflow-hidden"
+      className={`pointer-events-none absolute inset-0 select-none overflow-hidden ${
+        dim ? "opacity-30" : ""
+      }`}
       style={{
-        maskImage:
-          "radial-gradient(ellipse 62% 58% at 50% 50%, transparent 30%, black 82%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse 62% 58% at 50% 50%, transparent 30%, black 82%)",
+        // Dimmed, the wall is the thing behind the glass, so it must run the
+        // full width rather than being cleared out of the centre.
+        maskImage: dim
+          ? "radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 92%)"
+          : "radial-gradient(ellipse 62% 58% at 50% 50%, transparent 30%, black 82%)",
+        WebkitMaskImage: dim
+          ? "radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 92%)"
+          : "radial-gradient(ellipse 62% 58% at 50% 50%, transparent 30%, black 82%)",
       }}
     >
       <div className="absolute inset-0 flex flex-col justify-center gap-3 opacity-[0.34]">

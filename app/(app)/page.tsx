@@ -5,7 +5,7 @@ import { computeDirectoryMetrics } from "@/lib/metrics/directory";
 import { CreatorCard } from "@/components/creator/creator-card";
 import { toCardData } from "@/lib/card";
 import { PortraitWall } from "@/components/chrome/portrait-wall";
-import { HomeSearch } from "@/components/chrome/home-search";
+import { HomePrompt } from "@/components/home/home-prompt";
 import { FeatureShowcase } from "@/components/home/feature-showcase";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { buildCategoryCards } from "@/lib/home/categories";
@@ -93,8 +93,11 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero. The portraits are the product, so they are the backdrop. */}
-      <section className="relative overflow-hidden border-b border-hairline">
+      {/* Dark, like the strategiser, so following the call to action does not
+          flash from cream to black. */}
+      <section className="sg-page relative isolate overflow-hidden">
         <PortraitWall
+          dim
           creators={[...rows]
             .sort((a, b) => Number(b.portraitUrl !== null) - Number(a.portraitUrl !== null))
             .slice(0, 20)
@@ -104,17 +107,15 @@ export default async function HomePage() {
               portraitUrl: row.portraitUrl,
             }))}
         />
-        <div className="relative mx-auto max-w-[46rem] px-6 py-24 text-center sm:py-32">
-          <h1 className="font-display text-2xl leading-[1.05] text-ink sm:text-3xl">
-            Every creator the agency knows, in one place
-          </h1>
-          <p className="mx-auto mt-4 max-w-[34rem] text-base text-ink-muted">
-            Search {formatNumber(rows.length)} creators by category, reach, engagement and
-            rate, then build a client-ready shortlist.
-          </p>
-          <div className="mx-auto mt-8 max-w-[30rem]">
-            <HomeSearch />
-          </div>
+        {/* Glass needs something to blur. The collage is that something, held
+            soft and behind a heavy scrim so the placeholder keeps its contrast
+            against every part of it. */}
+        <div className="sg-collage-scrim" />
+        <div className="sg-ambient" />
+        <div className="sg-grain" />
+
+        <div className="relative mx-auto max-w-[52rem] px-6 py-20 sm:py-28">
+          <HomePrompt rosterSize={rows.length} />
         </div>
       </section>
 

@@ -560,3 +560,106 @@
     transform: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   /strategiser: one viewport, and the home page's glass box.
+   -------------------------------------------------------------------------- */
+@layer components {
+  /*
+    Fluid sizing between a 1280 laptop and a 1920 display, so the composition
+    scales continuously instead of jumping at a breakpoint.
+  */
+  .sg-fit {
+    --sg-orb: clamp(56px, 5.2vw, 72px);
+    --sg-gap: clamp(0.75rem, 2.2vh, 1.5rem);
+  }
+
+  .sg-fit .sg-orb-wrap {
+    width: var(--sg-orb);
+    height: var(--sg-orb);
+  }
+  .sg-fit .sg-orb-bloom {
+    width: calc(var(--sg-orb) * 1.9);
+    height: calc(var(--sg-orb) * 1.9);
+    margin: calc(var(--sg-orb) * -0.95) 0 0 calc(var(--sg-orb) * -0.95);
+  }
+
+  .sg-fit .sg-headline {
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.15;
+  }
+  .sg-fit .sg-subline {
+    font-size: clamp(0.875rem, 1vw, 1rem);
+    line-height: 1.5;
+  }
+
+  /*
+    Hold the whole composition in one screen on a laptop and up. Deliberately
+    not applied below 1024px wide or 700px tall: on a phone, scrolling is
+    correct, and squeezing this into a small screen would cost more than the
+    scroll does. Achieved by shrinking, never by clipping — no overflow hidden
+    on the page, so zoom and keyboard navigation still reach everything.
+  */
+  @media (min-width: 1024px) and (min-height: 700px) {
+    .sg-fit {
+      min-height: calc(100dvh - 3.5rem);
+      justify-content: center;
+    }
+    .sg-fit .sg-stack > * + * {
+      margin-top: var(--sg-gap);
+    }
+  }
+
+  /* --- the home page's glass ------------------------------------------- */
+
+  /*
+    Glass needs something behind it to blur, so this only ever sits over the
+    portrait collage and the ambient glow. Over a flat colour it would be a
+    slightly transparent box and the blur would be wasted work.
+  */
+  .sg-glass {
+    position: relative;
+    background: rgb(23 19 17 / 0.55);
+    -webkit-backdrop-filter: blur(24px) saturate(120%);
+    backdrop-filter: blur(24px) saturate(120%);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    box-shadow: 0 30px 70px -34px rgb(0 0 0 / 0.85);
+  }
+  /* Light catching the upper lip. */
+  .sg-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      to right,
+      transparent 8%,
+      rgb(255 255 255 / 0.28) 50%,
+      transparent 92%
+    );
+    pointer-events: none;
+  }
+
+  /*
+    Without backdrop-filter the pane must not render as an unreadable
+    transparent rectangle: it falls back to the same value, solid.
+  */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sg-glass { background: #171311; }
+  }
+
+  /* The collage behind the glass, held soft and low contrast so the
+     placeholder keeps its contrast against every part of it. */
+  .sg-collage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0.28;
+  }
+  .sg-collage-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgb(6 5 5 / 0.72), rgb(6 5 5 / 0.88));
+  }
+}
