@@ -6,8 +6,9 @@ import { CreatorCard } from "@/components/creator/creator-card";
 import { toCardData } from "@/lib/card";
 import { PortraitWall } from "@/components/chrome/portrait-wall";
 import { HomeSearch } from "@/components/chrome/home-search";
-import { CategoryIcon } from "@/components/platform-icon";
 import { FeatureShowcase } from "@/components/home/feature-showcase";
+import { CategoryGrid } from "@/components/home/category-grid";
+import { buildCategoryCards } from "@/lib/home/categories";
 import { SectionHeading } from "@/components/ui-bits";
 import { formatCompact, formatDate, formatNumber, NO_DATA } from "@/lib/format";
 
@@ -48,6 +49,8 @@ export default async function HomePage() {
   const populatedCategories = categories
     .filter((category) => category.creatorCount > 0)
     .sort((a, b) => b.creatorCount - a.creatorCount);
+
+  const categoryCards = buildCategoryCards(rows, categories);
 
   // Eight per category. A creator counts towards a top-level category if they
   // are filed under it or under one of its children, which is the rule the
@@ -127,7 +130,7 @@ export default async function HomePage() {
       </section>
 
       <div className="mx-auto max-w-[80rem] space-y-16 px-6 py-16">
-        {/* Categories: a compact strip of destinations, not a photo gallery. */}
+        {/* Categories, as a wall of the people filed under them. */}
         <section className="space-y-6">
           <SectionHeading
             action={
@@ -139,32 +142,12 @@ export default async function HomePage() {
             Categories
           </SectionHeading>
 
-          {populatedCategories.length === 0 ? (
+          {categoryCards.length === 0 ? (
             <p className="text-sm text-ink-muted">
               No creators are filed under a category yet.
             </p>
           ) : (
-            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {populatedCategories.map((category) => (
-                <li key={category.id}>
-                  <Link
-                    href={`/creators?category=${category.slug}`}
-                    className="group flex h-full flex-col justify-between gap-6 rounded-xl border border-hairline bg-surface p-5 transition-colors hover:border-ink/25"
-                  >
-                    <CategoryIcon
-                      slug={category.slug}
-                      className="size-8 text-ink-muted transition-colors group-hover:text-ink"
-                    />
-                    <span>
-                      <span className="block text-lg leading-tight">{category.name}</span>
-                      <span className="numeral mt-1 block text-sm text-ink-muted">
-                        {formatNumber(category.creatorCount)} creators
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <CategoryGrid cards={categoryCards} />
           )}
         </section>
 
