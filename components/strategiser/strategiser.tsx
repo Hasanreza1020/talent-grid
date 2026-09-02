@@ -94,6 +94,8 @@ export function Strategiser({
         } else {
           setNotice(outcome.error);
         }
+      } catch {
+        setNotice("The shortlist could not be built. Try again in a moment.");
       } finally {
         clearInterval(tick);
         setStage(0);
@@ -105,7 +107,15 @@ export function Strategiser({
   const advance = (nextThread: Turn[], questionsAsked: number) => {
     setNotice(null);
     startTransition(async () => {
-      const outcome = await gatherAction(nextThread, questionsAsked);
+      let outcome;
+      try {
+        outcome = await gatherAction(nextThread, questionsAsked);
+      } catch {
+        // A thrown action used to leave the thread with no question, no error
+        // and no way forward but Start over. Whatever happens, say something.
+        setNotice("Something went wrong reading that. Try rephrasing it.");
+        return;
+      }
 
       if ("message" in outcome) {
         setNotice(outcome.message);
@@ -171,12 +181,16 @@ export function Strategiser({
   }
 
   return (
-    <section className="relative isolate overflow-hidden bg-ink">
+    /*
+      Fills everything below the nav, so the dark band ends at the fold rather
+      than partway down with the page's own canvas showing beneath it.
+    */
+    <section className="relative isolate flex min-h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-ink">
       <HeroLights working={building} />
 
-      <div className="relative mx-auto min-h-[70vh] max-w-[64rem] px-4 py-16 sm:px-6 sm:py-24">
+      <div className="relative mx-auto flex w-full max-w-[64rem] flex-1 flex-col justify-center px-4 py-16 sm:px-6">
         {phase === "gathering" ? (
-          <div className="rounded-xl border border-hairline bg-surface p-6 sm:p-8">
+          <div className="w-full">
             <ThreadView
               thread={thread}
               slots={slots}

@@ -27,8 +27,16 @@ const GEMINI_MODELS = [
 const modelUrl = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-const TIMEOUT_MS = 20_000;
-const RETRIES = 1;
+/*
+  Worst case matters more than best case here. Three models, each retried, at
+  twenty seconds a go is two minutes of a person staring at a frozen card while
+  Google answers 503 — and the fallback that would have served them instantly
+  never gets reached. One attempt per model against a hard overall deadline
+  fails over quickly and gives up quickly, which is what the fallback is for.
+*/
+const TIMEOUT_MS = 9_000;
+const RETRIES = 0;
+const DEADLINE_MS = 24_000;
 
 export class ModelUnavailable extends Error {
   constructor(reason: string) {
@@ -94,8 +102,10 @@ export async function generateJson<T>(options: {
   temperature: number;
 }): Promise<T> {
   let lastError: unknown = null;
+  const deadline = Date.now() + DEADLINE_MS;
 
   for (const model of GEMINI_MODELS) {
+    if (Date.now() > deadline) break;
     for (let attempt = 0; attempt <= RETRIES; attempt += 1) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

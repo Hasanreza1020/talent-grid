@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Moon, Rocket, Smartphone, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const EXAMPLES = [
   {
@@ -137,31 +136,23 @@ export function PromptCard({
   return (
     <div className="mx-auto max-w-[46rem]">
       <div className="text-center">
-        {/*
-          A near-solid scrim rather than a gradient. The blobs are dim enough
-          that white clears 4.5:1 on its own, but only until two of them drift
-          across each other behind the headline; this holds at the worst frame
-          rather than the first one.
-        */}
-        <div className="inline-block rounded-2xl bg-black/45 px-6 py-5 backdrop-blur-[2px]">
-          <h1
-            className="sg-enter font-display text-2xl leading-tight text-white sm:text-3xl"
-            style={{ animationDelay: "0ms" }}
-          >
-            Describe the campaign. Get the creators.
-          </h1>
-          <p
-            className="sg-enter mx-auto mt-4 max-w-[34rem] text-base text-white/70"
-            style={{ animationDelay: "60ms" }}
-          >
-            Tell us what you sell, what you want to achieve, and what you can spend. We
-            will build the shortlist from {rosterSize} creators on file.
-          </p>
-        </div>
+        <h1
+          className="sg-enter font-display text-3xl leading-tight text-white sm:text-4xl"
+          style={{ animationDelay: "0ms" }}
+        >
+          Describe the campaign. Get the creators.
+        </h1>
+        <p
+          className="sg-enter mx-auto mt-4 max-w-[34rem] text-base leading-relaxed text-white/60"
+          style={{ animationDelay: "60ms" }}
+        >
+          Tell us what you sell, what you want to achieve, and what you can spend. We
+          will build the shortlist from {rosterSize} creators on file.
+        </p>
       </div>
 
       <div
-        className={`sg-enter sg-card relative mt-10 rounded-xl border border-[#e4d9cf] bg-surface p-4 shadow-[0_18px_40px_-24px_rgb(0_0_0_/_0.55)] backdrop-blur-sm sm:p-5 ${
+        className={`sg-enter sg-card relative mt-10 rounded-3xl border border-white/15 bg-white/10 p-3 shadow-[0_24px_60px_-30px_rgb(0_0_0_/_0.8)] backdrop-blur-2xl sm:p-4 ${
           focused ? "sg-card-focused" : ""
         } ${pending ? "scale-[0.98] opacity-60" : ""}`}
         style={{ animationDelay: "120ms" }}
@@ -193,7 +184,7 @@ export function PromptCard({
           }}
           rows={3}
           placeholder={placeholder}
-          className="relative w-full resize-none bg-transparent text-base leading-6 outline-none placeholder:text-ink-muted/60"
+          className="relative w-full resize-none bg-transparent px-2 pt-2 text-[15px] leading-6 text-white outline-none placeholder:text-white/35"
         />
 
         <div className="relative mt-4 flex flex-wrap items-end justify-between gap-3">
@@ -203,7 +194,7 @@ export function PromptCard({
                 key={example.label}
                 type="button"
                 onClick={() => fill(example.brief)}
-                className="sg-enter group/chip flex items-center gap-1.5 rounded-full border border-hairline px-3 py-1 text-xs text-ink-muted transition-colors duration-150 hover:border-brand hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                className="sg-enter group/chip flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-colors duration-150 hover:border-brand hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 style={{ animationDelay: `${180 + index * 40}ms` }}
               >
                 <example.Icon className="size-3.5 transition-colors duration-150 group-hover/chip:text-brand" />
@@ -212,13 +203,14 @@ export function PromptCard({
             ))}
           </div>
 
-          <Button
+          <button
+            type="button"
             onClick={onSubmit}
             disabled={!ready || pending}
-            className="sg-shimmer shrink-0 rounded-lg transition-transform disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-ink-muted disabled:opacity-100"
+            className="sg-shimmer shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
           >
             {pending ? "Working" : "Build shortlist"}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
