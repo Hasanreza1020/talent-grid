@@ -1,30 +1,9 @@
-"use client";
-
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { PlatformIcon } from "@/components/platform-icon";
+import { TierChart, type TierDatum } from "@/components/home/tier-chart";
 import { formatCompact, formatNumber } from "@/lib/format";
 import type { Platform } from "@/lib/types";
 
-const AXIS = { stroke: "var(--ink-muted)", fontSize: 12 };
-const GRID = "var(--hairline)";
-
-const TOOLTIP_STYLE = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 8,
-  fontSize: 12,
-} as const;
-
-export type TierDatum = { tier: string; range: string; creators: number };
+export type { TierDatum };
 export type PlatformDatum = {
   platform: Platform;
   label: string;
@@ -33,12 +12,10 @@ export type PlatformDatum = {
 };
 
 /**
- * Two magnitude charts and a completeness read-out.
- *
- * Both charts are single-series counts, so they take one hue rather than a
- * categorical palette, and neither needs a legend: the title names the series.
- * The accent is not used to encode anything here; it marks the single largest
- * bar, which is a pointer, not a category.
+ * One magnitude chart, a platform read-out and a completeness read-out. Only
+ * the chart needs the browser, so only the chart crosses into the client
+ * bundle; the two read-outs are rendered on the server as the static markup
+ * they are.
  */
 export function ByTheNumbers({
   tiers,
@@ -49,8 +26,6 @@ export function ByTheNumbers({
   platforms: PlatformDatum[];
   completeness: { label: string; done: number; total: number }[];
 }) {
-  const busiestTier = Math.max(...tiers.map((tier) => tier.creators));
-
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
       <section>
@@ -59,44 +34,8 @@ export function ByTheNumbers({
           Tier comes from the highest follower count on any of a creator&rsquo;s
           accounts, so it moves on its own as the numbers are updated.
         </p>
-        <div className="mt-4 h-[220px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={tiers} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke={GRID} vertical={false} />
-              <XAxis
-                dataKey="tier"
-                tickLine={false}
-                axisLine={{ stroke: GRID }}
-                tick={AXIS}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={AXIS}
-                width={32}
-                allowDecimals={false}
-              />
-              <Tooltip
-                cursor={{ fill: "var(--muted)" }}
-                contentStyle={TOOLTIP_STYLE}
-                formatter={(value: unknown) =>
-                  [`${Number(value)} creators`, "In this tier"] as [string, string]
-                }
-                labelFormatter={(label: unknown) => {
-                  const match = tiers.find((tier) => tier.tier === String(label));
-                  return match ? `${match.tier} — ${match.range}` : String(label);
-                }}
-              />
-              <Bar dataKey="creators" radius={[4, 4, 0, 0]}>
-                {tiers.map((tier) => (
-                  <Cell
-                    key={tier.tier}
-                    fill={tier.creators === busiestTier ? "var(--brand)" : "var(--ink)"}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="mt-4">
+          <TierChart tiers={tiers} />
         </div>
       </section>
 

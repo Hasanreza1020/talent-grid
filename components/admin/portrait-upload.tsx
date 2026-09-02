@@ -2,10 +2,10 @@
 
 import { useRef, useState, useTransition } from "react";
 import NextImage from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import type { Crop, PixelCrop } from "react-image-crop";
 import { toast } from "sonner";
-import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
 import { setPortraitUrl } from "@/app/admin/actions";
@@ -13,6 +13,21 @@ import { initialsOf } from "@/lib/format";
 
 const ASPECT = 4 / 5;
 const OUTPUT_WIDTH = 1000; // 1000 x 1250 at the 4:5 ratio
+
+/**
+ * react-image-crop and its stylesheet are the largest thing on this form and
+ * are needed only once someone has chosen a file, which most visits to the
+ * form never do. They are fetched at that point rather than on load.
+ */
+const PortraitCropper = dynamic(
+  () => import("@/components/admin/portrait-cropper").then((mod) => mod.PortraitCropper),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[26rem] w-full rounded-md bg-muted" aria-label="Loading the cropper" />
+    ),
+  },
+);
 
 /**
  * Portrait upload with a fixed 4:5 crop.
@@ -47,17 +62,6 @@ export function PortraitUpload({
     const reader = new FileReader();
     reader.onload = () => setSource(String(reader.result));
     reader.readAsDataURL(file);
-  };
-
-  const onImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = event.currentTarget;
-    setCrop(
-      centerCrop(
-        makeAspectCrop({ unit: "%", width: 90 }, ASPECT, width, height),
-        width,
-        height,
-      ),
-    );
   };
 
   const upload = async () => {
@@ -174,24 +178,14 @@ export function PortraitUpload({
 
       {source ? (
         <div className="space-y-3 border border-hairline bg-surface p-4">
-          <ReactCrop
-            crop={crop}
-            onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={(pixelCrop) => setCompletedCrop(pixelCrop)}
+          <PortraitCropper
+            source={source}
             aspect={ASPECT}
-            keepSelection
-          >
-            {/* Plain img: this is a local data URL being measured for cropping,
-                which next/image cannot do. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imageRef}
-              src={source}
-              alt="Crop the portrait"
-              onLoad={onImageLoad}
-              className="max-h-[26rem] w-auto"
-            />
-          </ReactCrop>
+            crop={crop}
+            imageRef={imageRef}
+            onCropChange={setCrop}
+            onCropComplete={setCompletedCrop}
+          />
 
           <div className="flex items-center gap-2">
             <Button onClick={upload} disabled={uploading || pending}>
