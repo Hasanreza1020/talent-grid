@@ -22,6 +22,7 @@ const LINKS = [
   { href: "/", label: "Home", exact: true },
   { href: "/creators", label: "Creators" },
   { href: "/compare", label: "Compare" },
+  { href: "/strategiser", label: "Strategiser" },
   { href: "/shortlists", label: "Shortlists" },
 ];
 
@@ -50,7 +51,7 @@ export function Nav({ user }: { user: AppUser }) {
         <Wordmark href="/" />
 
         {/*
-          The four links only fit beside the lockup from md up. Below that they
+          The links only fit beside the lockup from md up. Below that they
           move into a sheet rather than being squeezed until they wrap or run
           off the end of the bar.
         */}
