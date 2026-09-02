@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Account,
@@ -265,17 +266,27 @@ async function attachRelations(
  * dozen conditional PostgREST filters, and it keeps the filter semantics in
  * one testable place.
  */
+const loadDirectory = cache(
+  async (includeArchived: boolean): Promise<DirectoryRow[]> => {
+    const supabase = await createClient();
+    let query = supabase.from("creator_directory").select(DIRECTORY_COLUMNS);
+    if (!includeArchived) query = query.is("deleted_at", null);
+
+    const { data, error } = await query.order("display_name");
+    if (error) throw error;
+
+    return attachRelations((data ?? []).map(mapDirectoryRow));
+  },
+);
+
 export async function listDirectory(
   options: { includeArchived?: boolean } = {},
 ): Promise<DirectoryRow[]> {
-  const supabase = await createClient();
-  let query = supabase.from("creator_directory").select(DIRECTORY_COLUMNS);
-  if (!options.includeArchived) query = query.is("deleted_at", null);
-
-  const { data, error } = await query.order("display_name");
-  if (error) throw error;
-
-  return attachRelations((data ?? []).map(mapDirectoryRow));
+  // Keyed on a boolean rather than the options object: React's cache compares
+  // arguments by identity, and a fresh object literal per call would memoize
+  // nothing. A page that splits its rail and its results across two Suspense
+  // boundaries reads the directory once, not twice.
+  return loadDirectory(options.includeArchived ?? false);
 }
 
 export async function getDirectoryRowsBySlugs(slugs: string[]): Promise<DirectoryRow[]> {

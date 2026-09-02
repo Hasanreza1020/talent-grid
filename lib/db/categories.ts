@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Category = {
@@ -11,7 +12,7 @@ export type Category = {
 
 export type CategoryTree = Category & { children: Category[]; creatorCount: number };
 
-export async function listCategories(): Promise<Category[]> {
+export const listCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
@@ -27,14 +28,14 @@ export async function listCategories(): Promise<Category[]> {
     description: row.description,
     coverUrl: row.cover_url,
   }));
-}
+});
 
 /**
  * Parent categories with their children and a live creator count. The count
  * includes creators filed under any child, because a client asking for
  * "travel" means the whole tree.
  */
-export async function listCategoryTree(): Promise<CategoryTree[]> {
+export const listCategoryTree = cache(async (): Promise<CategoryTree[]> => {
   const supabase = await createClient();
   const [categories, links] = await Promise.all([
     listCategories(),
@@ -58,11 +59,13 @@ export async function listCategoryTree(): Promise<CategoryTree[]> {
     }
     return { ...parent, children, creatorCount: creators.size };
   });
-}
+});
 
-export async function listTags(): Promise<{ id: string; label: string; slug: string }[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("tags").select("id, label, slug").order("label");
-  if (error) throw error;
-  return data ?? [];
-}
+export const listTags = cache(
+  async (): Promise<{ id: string; label: string; slug: string }[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("tags").select("id, label, slug").order("label");
+    if (error) throw error;
+    return data ?? [];
+  },
+);

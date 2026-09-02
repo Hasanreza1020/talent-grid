@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useOptimistic, useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,13 @@ export type Facets = {
  * The filter rail writes every change straight into the URL query string, so
  * the browser back button works, a filtered view can be pasted to a colleague,
  * and the server component re-runs the same pure filter code on the way back.
+ *
+ * The controls read from an optimistic copy of those filters rather than from
+ * the URL directly. A transition keeps the old URL in place until the server
+ * has answered, so a box driven straight off `useSearchParams` stays unticked
+ * for the length of the query and the click feels dropped. The optimistic
+ * value ticks it on the click and is discarded the moment the real URL lands,
+ * so the two can never disagree for longer than the round trip.
  */
 export function FilterRail({
   facets,
@@ -51,20 +58,22 @@ export function FilterRail({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const filters = useMemo(
+  const urlFilters = useMemo(
     () => parseFilters(Object.fromEntries(searchParams.entries())),
     [searchParams],
   );
-  const [searchDraft, setSearchDraft] = useState(filters.q);
+  const [filters, showFilters] = useOptimistic(urlFilters);
+  const [searchDraft, setSearchDraft] = useState(urlFilters.q);
 
   const push = useCallback(
     (next: BrowseFilters) => {
       const query = filtersToQuery(next);
       startTransition(() => {
+        showFilters(next);
         router.replace(query ? `/creators?${query}` : "/creators", { scroll: false });
       });
     },
-    [router],
+    [router, showFilters],
   );
 
   const update = useCallback(

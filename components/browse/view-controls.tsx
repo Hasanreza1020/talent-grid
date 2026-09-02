@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useOptimistic, useTransition } from "react";
 import { LayoutGrid, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -12,6 +13,11 @@ import {
 } from "@/components/ui/select";
 import { parseFilters, filtersToQuery, type Sort } from "@/lib/browse";
 
+/**
+ * Sort and view. Optimistic for the same reason the filter rail is: the select
+ * and the two view buttons have to show the choice on the click, not when the
+ * re-sorted rows come back.
+ */
 export function ViewControls({
   sorts,
   sortLabels,
@@ -21,11 +27,17 @@ export function ViewControls({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filters = parseFilters(Object.fromEntries(searchParams.entries()));
+  const [, startTransition] = useTransition();
+  const urlFilters = parseFilters(Object.fromEntries(searchParams.entries()));
+  const [filters, showFilters] = useOptimistic(urlFilters);
 
   const go = (patch: Partial<typeof filters>) => {
-    const query = filtersToQuery({ ...filters, ...patch });
-    router.replace(query ? `/creators?${query}` : "/creators", { scroll: false });
+    const next = { ...filters, ...patch };
+    const query = filtersToQuery(next);
+    startTransition(() => {
+      showFilters(next);
+      router.replace(query ? `/creators?${query}` : "/creators", { scroll: false });
+    });
   };
 
   return (
