@@ -143,7 +143,7 @@ export function PromptCard({
           Describe the campaign. Get the creators.
         </h1>
         <p
-          className="sg-enter mx-auto mt-4 max-w-[34rem] text-base leading-relaxed text-white/60"
+          className="sg-enter mx-auto mt-3 max-w-[34rem] text-base leading-relaxed text-white/60"
           style={{ animationDelay: "60ms" }}
         >
           Tell us what you sell, what you want to achieve, and what you can spend. We
@@ -152,11 +152,10 @@ export function PromptCard({
       </div>
 
       <div
-        className={`sg-enter sg-card relative mt-10 rounded-3xl border border-white/15 bg-white/10 p-3 shadow-[0_24px_60px_-30px_rgb(0_0_0_/_0.8)] backdrop-blur-2xl sm:p-4 ${
-          focused ? "sg-card-focused" : ""
-        } ${pending ? "scale-[0.98] opacity-60" : ""}`}
+        className={`sg-enter sg-ring mt-8 ${pending ? "scale-[0.98] opacity-60" : ""}`}
         style={{ animationDelay: "120ms" }}
       >
+        <div className={`sg-card p-3 sm:p-4 ${focused ? "sg-card-focused" : ""}`}>
         <span className="sg-bloom" />
 
         <label htmlFor="brief" className="sr-only">
@@ -184,7 +183,7 @@ export function PromptCard({
           }}
           rows={3}
           placeholder={placeholder}
-          className="relative w-full resize-none bg-transparent px-2 pt-2 text-[15px] leading-6 text-white outline-none placeholder:text-white/35"
+          className="relative w-full resize-none bg-transparent px-2 pt-2 text-[15px] leading-6 text-white outline-none placeholder:text-white/55"
         />
 
         <div className="relative mt-4 flex flex-wrap items-end justify-between gap-3">
@@ -203,16 +202,33 @@ export function PromptCard({
             ))}
           </div>
 
+          {/*
+            Orange either way. Grey here read as broken, because the typed
+            placeholder makes the field look filled while the button waits on
+            an empty value — so the two states differ in weight, not in hue.
+          */}
           <button
             type="button"
             onClick={onSubmit}
             disabled={!ready || pending}
-            className="sg-shimmer shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
+            aria-describedby={ready ? undefined : "brief-hint"}
+            className={`sg-shimmer shrink-0 rounded-xl px-5 py-2.5 text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+              ready && !pending
+                ? "bg-brand text-white shadow-[0_8px_24px_-8px_rgb(255_77_13_/_0.7)]"
+                : "cursor-not-allowed border border-brand/40 bg-brand/15 text-brand"
+            }`}
           >
             {pending ? "Working" : "Build shortlist"}
           </button>
         </div>
+        </div>
       </div>
+
+      {!ready ? (
+        <p id="brief-hint" className="mt-3 text-center text-xs text-white/45">
+          Write a sentence or two about the campaign to continue.
+        </p>
+      ) : null}
     </div>
   );
 }

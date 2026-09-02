@@ -3,23 +3,21 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The moving lights behind the prompt card.
+ * The layered background behind the prompt card.
  *
- * Three blurred radial gradients on near-black, drifting on CSS keyframes.
- * There is no JavaScript animation loop here and there should never be one:
- * the only work this component does at runtime is set an opacity variable on
- * scroll and pause the layer when the tab is hidden.
+ * Bottom to top: near-black base, three coloured lights, the masked grid, the
+ * scan sweep, grain, vignette. Three colours is the ceiling — a fourth is what
+ * turned the first version to mud.
  *
- * Everything animated is transform or opacity. The blur is applied once, at
- * rest — animating a filter repaints the whole layer every frame, which is
- * exactly how this effect ends up stuttering on the mid-range Android phones
- * that make up most of this market.
+ * There is no JavaScript animation loop and there should never be one. The
+ * only runtime work is an opacity variable written on scroll and a class
+ * toggled when the tab is hidden. Everything else is CSS keyframes moving
+ * transform and opacity, because anything else repaints every frame and will
+ * stutter on the mid-range Android phones that are most of this market.
  */
 export function HeroLights({ working }: { working: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Fade the whole layer out across roughly one viewport of scrolling, so the
-  // results below are read on a calm ground rather than through the lights.
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
@@ -44,7 +42,6 @@ export function HeroLights({ working }: { working: boolean }) {
     };
   }, []);
 
-  // Nothing should be animating behind a tab nobody is looking at.
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
@@ -67,6 +64,17 @@ export function HeroLights({ working }: { working: boolean }) {
         <span className="sg-blob sg-blob-b" />
         <span className="sg-blob sg-blob-c" />
       </div>
+
+      <div className="sg-ends" />
+
+      {/* One element, one background pattern. The inner layer carries the
+          drift so the mask on the parent does not move with it. */}
+      <div className="sg-grid">
+        <div className="sg-grid-lines">
+          <div className="sg-scan" />
+        </div>
+      </div>
+
       <div className="sg-grain" />
       <div className="sg-vignette" />
     </div>

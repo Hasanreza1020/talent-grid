@@ -35,6 +35,7 @@ function isActive(pathname: string, link: (typeof LINKS)[number]): boolean {
 export function Nav({ user }: { user: AppUser }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const onDark = pathname === "/strategiser";
 
   // The sheet is a navigation menu, so it closes when navigation happens.
   useEffect(() => {
@@ -46,8 +47,24 @@ export function Nav({ user }: { user: AppUser }) {
   const links = LINKS;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[80rem] items-center gap-4 px-4 sm:px-6 lg:gap-8">
+    /*
+      On the strategiser the band runs up behind this bar, so the bar goes
+      transparent rather than meeting the dark with a hard cream line. It is
+      the only route that gets this: everywhere else keeps the hairline.
+    */
+    <header
+      className={
+        onDark
+          ? "sticky top-0 z-40 bg-transparent"
+          : "sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur"
+      }
+    >
+      <div
+        className={cn(
+          "mx-auto flex h-14 max-w-[80rem] items-center gap-4 px-4 sm:px-6 lg:gap-8",
+          onDark && "text-white",
+        )}
+      >
         <Wordmark href="/" />
 
         {/*
@@ -65,7 +82,13 @@ export function Nav({ user }: { user: AppUser }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative py-4 text-sm transition-colors",
-                  active ? "text-ink" : "text-ink-muted hover:text-ink",
+                  onDark
+                    ? active
+                      ? "text-white"
+                      : "text-white/60 hover:text-white"
+                    : active
+                      ? "text-ink"
+                      : "text-ink-muted hover:text-ink",
                 )}
               >
                 {link.label}
@@ -80,15 +103,30 @@ export function Nav({ user }: { user: AppUser }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
-          <span className="hidden items-center gap-2 text-sm text-ink-muted lg:flex">
+          <span
+            className={cn(
+              "hidden items-center gap-2 text-sm lg:flex",
+              onDark ? "text-white/60" : "text-ink-muted",
+            )}
+          >
             {user.fullName ?? "Signed in"}
-            <span className="rounded-full border border-hairline px-2 py-0.5 text-xs">
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-xs",
+                onDark ? "border-white/20" : "border-hairline",
+              )}
+            >
               {USER_ROLE_LABEL[user.role]}
             </span>
           </span>
 
           <form action={signOut} className="hidden md:block">
-            <Button type="submit" variant="ghost" size="sm">
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              className={onDark ? "text-white/70 hover:bg-white/10 hover:text-white" : undefined}
+            >
               Sign out
             </Button>
           </form>
@@ -99,7 +137,10 @@ export function Nav({ user }: { user: AppUser }) {
                 variant="ghost"
                 size="sm"
                 aria-label="Open menu"
-                className="size-9 p-0 md:hidden"
+                className={cn(
+                  "size-9 p-0 md:hidden",
+                  onDark && "text-white hover:bg-white/10 hover:text-white",
+                )}
               >
                 <Menu className="size-5" />
               </Button>

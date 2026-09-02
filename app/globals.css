@@ -252,20 +252,23 @@
    /strategiser hero only.
    ==========================================================================
    The one place in Grid that is allowed atmosphere. Every selector here is
-   prefixed sg- and used on that page alone; nothing in this block is a global
-   utility and none of it should be reached for from another route.
+   prefixed sg- and used on that page alone.
+
+   Version one desaturated into sepia: the accent was laid on at low opacity
+   under a heavy blur and a vignette, and orange treated that way turns brown.
+   The fix is more saturation, more luminance, a base close to true black for
+   it to read against, and the brightest point moved to sit behind the card the
+   reader is meant to touch rather than off in a corner.
 
    The global reduced-motion rule further up collapses every animation here to
-   a stop. That is the intended behaviour: the blobs hold at their first
-   keyframe and the hero becomes a still gradient rather than a broken one.
+   a stop, which leaves a still version of the same composition.
    ========================================================================== */
 @layer components {
   .sg-hero {
     position: relative;
     isolation: isolate;
-    background: var(--ink);
-    /* Set by the scroll handler: the whole animated layer fades out over one
-       viewport height so the results below sit on a calm ground. */
+    /* Closer to true black than --ink, so the orange has somewhere to sit. */
+    background: #060505;
     --sg-fade: 1;
   }
 
@@ -280,68 +283,161 @@
   .sg-blob {
     position: absolute;
     border-radius: 9999px;
-    /* Blurred once, at rest. Animating a filter repaints every frame. */
-    filter: blur(120px);
+    filter: blur(110px);
     will-change: transform;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
     animation-direction: alternate;
+    transition: opacity 800ms ease-out;
   }
 
-  /* Three loop lengths that share no common factor, so the set never resyncs
-     and the drift never reads as a repeating pattern. */
+  /*
+    Primary. Directly behind and a little above the prompt card, so the light
+    appears to come from the thing being used. Brighter and more saturated than
+    the brand token, because a hundred pixels of blur eats both.
+  */
   .sg-blob-a {
-    width: 60vw;
-    height: 60vw;
-    top: -12vh;
-    left: -8vw;
-    background: radial-gradient(circle, var(--brand) 0%, transparent 70%);
-    opacity: 0.35;
+    width: 70vw;
+    height: 46vw;
+    top: 8%;
+    left: 50%;
+    margin-left: -35vw;
+    background: radial-gradient(circle, #ff6a24 0%, #ff4d0d 42%, transparent 72%);
+    opacity: 0.45;
     animation-name: sg-drift-a;
     animation-duration: 31s;
   }
 
+  /* Depth. Deeper and more saturated, at the edges, to enrich the falloff. */
   .sg-blob-b {
-    width: 50vw;
-    height: 50vw;
-    bottom: -14vh;
-    right: -6vw;
-    background: radial-gradient(circle, #b8340a 0%, transparent 70%);
+    width: 52vw;
+    height: 52vw;
+    bottom: -18vh;
+    right: -10vw;
+    background: radial-gradient(circle, #c22d06 0%, transparent 70%);
     opacity: 0.3;
     animation-name: sg-drift-b;
     animation-duration: 24s;
   }
 
+  /*
+    Secondary. The warm cream already carried by the nav and the logo — a
+    genuinely different colour against the orange without leaving the palette,
+    and it ties the band back to the rest of the site.
+  */
   .sg-blob-c {
-    width: 40vw;
-    height: 40vw;
-    top: 22%;
-    left: 32%;
-    background: radial-gradient(circle, var(--brand) 0%, transparent 70%);
-    opacity: 0.2;
+    width: 46vw;
+    height: 30vw;
+    bottom: 2%;
+    left: 6%;
+    background: radial-gradient(circle, #fff1ec 0%, transparent 68%);
+    opacity: 0.22;
     animation-name: sg-drift-c;
     animation-duration: 39s;
   }
 
-  /* Amplitude is small on purpose: light breathing, not objects sliding. */
   @keyframes sg-drift-a {
     from { transform: translate3d(0, 0, 0) scale(1); }
-    to { transform: translate3d(9vw, 7vh, 0) scale(1.1); }
+    to { transform: translate3d(5vw, 5vh, 0) scale(1.12); }
   }
   @keyframes sg-drift-b {
     from { transform: translate3d(0, 0, 0) scale(1.05); }
-    to { transform: translate3d(-8vw, -6vh, 0) scale(0.95); }
+    to { transform: translate3d(-7vw, -5vh, 0) scale(0.94); }
   }
   @keyframes sg-drift-c {
     from { transform: translate3d(0, 0, 0) scale(0.95); }
-    to { transform: translate3d(6vw, -8vh, 0) scale(1.12); }
+    to { transform: translate3d(7vw, -6vh, 0) scale(1.1); }
+  }
+
+  /* Near-true-black at the top and bottom edges, so the colour is contained. */
+  .sg-ends {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      #060505 0%,
+      transparent 22%,
+      transparent 74%,
+      #060505 100%
+    );
   }
 
   /*
-    Grain. Large blurred gradients band visibly on eight-bit panels and on the
-    cheap Android screens most of this market uses; noise breaks the bands up.
-    Static image, no animation, costs nothing after first paint.
+    The grid. One element with a background pattern, never hundreds of divs.
+
+    Masked to the centre so it reads as light falling on a surface rather than
+    a wireframe, and blended over the lights so it picks up the orange where
+    the glow passes behind it and vanishes in the dark. That blend is the whole
+    point: unblended it looks pasted on.
   */
+  .sg-grid {
+    position: absolute;
+    inset: -80px;
+    opacity: var(--sg-fade);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.55) 0 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.55) 0 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(
+      ellipse 58% 52% at 50% 42%,
+      #000 0%,
+      rgb(0 0 0 / 0.5) 55%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      ellipse 58% 52% at 50% 42%,
+      #000 0%,
+      rgb(0 0 0 / 0.5) 55%,
+      transparent 78%
+    );
+  }
+
+  .sg-grid-lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.07;
+    will-change: transform;
+    background-image: inherit;
+    background-size: inherit;
+    /* Exactly one cell of travel, so the loop is seamless. */
+    animation: sg-grid-drift 20s linear infinite;
+  }
+
+  @keyframes sg-grid-drift {
+    to { transform: translate3d(64px, 64px, 0); }
+  }
+
+  /*
+    The scan. A soft band of brightness falling through the grid every fifteen
+    seconds. Most of the timeline is the pause: it should read as an event, not
+    as a loop.
+  */
+  .sg-scan {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 40%;
+    opacity: 0;
+    will-change: transform, opacity;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgb(255 255 255 / 0.6) 50%,
+      transparent 100%
+    );
+    animation: sg-scan-sweep 15s ease-in-out infinite;
+  }
+
+  @keyframes sg-scan-sweep {
+    0% { transform: translate3d(0, -60%, 0); opacity: 0; }
+    3% { opacity: 0.16; }
+    17% { transform: translate3d(0, 260%, 0); opacity: 0; }
+    100% { transform: translate3d(0, 260%, 0); opacity: 0; }
+  }
+
   .sg-grain {
     position: absolute;
     inset: 0;
@@ -350,58 +446,102 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* Keeps the lights feeling contained rather than sliced off at the edges. */
   .sg-vignette {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 45%, rgb(0 0 0 / 0.55) 100%);
+    background: radial-gradient(ellipse at center, transparent 48%, rgb(0 0 0 / 0.6) 100%);
   }
 
-  /* While the pipeline runs: faster and brighter, ramped rather than snapped. */
-  .sg-working .sg-blob {
-    animation-duration: 15s;
-    transition: opacity 600ms ease-out;
+  /* Working: brighter lights, faster drift, faster scan. */
+  .sg-working .sg-blob-a { opacity: 0.56; animation-duration: 16s; }
+  .sg-working .sg-blob-b { opacity: 0.38; animation-duration: 13s; }
+  .sg-working .sg-blob-c { opacity: 0.28; animation-duration: 20s; }
+  .sg-working .sg-scan { animation-duration: 5s; }
+  .sg-working .sg-grid-lines { animation-duration: 9s; }
+
+  .sg-paused .sg-blob,
+  .sg-paused .sg-scan,
+  .sg-paused .sg-grid-lines {
+    animation-play-state: paused;
   }
-  .sg-working .sg-blob-a { opacity: 0.42; animation-duration: 15s; }
-  .sg-working .sg-blob-b { opacity: 0.36; animation-duration: 12s; }
-  .sg-working .sg-blob-c { opacity: 0.24; animation-duration: 19s; }
-  .sg-blob { transition: opacity 800ms ease-out; }
 
-  /* Nothing should burn a frame budget behind a tab nobody is looking at. */
-  .sg-paused .sg-blob { animation-play-state: paused; }
-
-  /* Two blobs and a lighter blur on a phone: three blurred layers is the cost. */
+  /* Phone: two lights, bigger cells, no sweep. */
   @media (max-width: 767px) {
     .sg-blob { filter: blur(70px); }
-    .sg-blob-c { display: none; }
+    .sg-blob-b { display: none; }
+    .sg-grid { background-size: 40px 40px; }
+    .sg-scan { display: none; }
+    @keyframes sg-grid-drift {
+      to { transform: translate3d(40px, 40px, 0); }
+    }
   }
 
-  /* The card's focus bloom — the only glow on the page. */
+  /*
+    The card's travelling highlight. A conic gradient rotating inside a one
+    pixel ring, with the card's own surface laid over it, so all that shows is
+    a warm point moving round the border.
+  */
+  .sg-ring {
+    position: relative;
+    border-radius: 26px;
+    padding: 1px;
+    overflow: hidden;
+    background: rgb(255 255 255 / 0.16);
+  }
+  .sg-ring::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 180%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgb(255 138 76 / 0.85) 24deg,
+      transparent 70deg,
+      transparent 360deg
+    );
+    animation: sg-circuit 8s linear infinite;
+    will-change: transform;
+  }
+  .sg-working .sg-ring::before,
+  .sg-ring-fast::before {
+    animation-duration: 3s;
+  }
+  @keyframes sg-circuit {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
   .sg-card {
-    transition:
-      border-color 200ms ease,
-      opacity 400ms ease,
-      transform 400ms ease;
+    position: relative;
+    border-radius: 25px;
+    /* Several steps lighter than the darkest point of the band, so the edges
+       are findable without squinting, with a lighter top edge to catch the
+       light coming from behind it. */
+    background: linear-gradient(to bottom, #2a2320 0%, #1b1614 45%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 30px 70px -34px rgb(0 0 0 / 0.9);
+    transition: opacity 400ms ease, transform 400ms ease;
   }
-  .sg-card-focused {
-    border-color: var(--brand);
-  }
+
   .sg-bloom {
     position: absolute;
     inset-inline: 8%;
-    bottom: -18px;
-    height: 40px;
+    bottom: -20px;
+    height: 44px;
     border-radius: 9999px;
-    background: var(--brand);
-    filter: blur(28px);
+    background: #ff5a1f;
+    filter: blur(30px);
     opacity: 0;
     transition: opacity 200ms ease;
     pointer-events: none;
   }
-  .sg-card-focused .sg-bloom { opacity: 0.4; }
+  .sg-card-focused .sg-bloom { opacity: 0.5; }
 
-  /* One slow sweep across the fill, on hover only. */
   .sg-shimmer { position: relative; overflow: hidden; }
   .sg-shimmer::after {
     content: "";
@@ -411,19 +551,16 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgb(255 255 255 / 0.28) 50%,
+      rgb(255 255 255 / 0.32) 50%,
       transparent 100%
     );
   }
-  .sg-shimmer:hover::after {
-    animation: sg-sweep 1200ms ease-out;
-  }
+  .sg-shimmer:hover::after { animation: sg-sweep 1200ms ease-out; }
   .sg-shimmer:active { transform: scale(0.98); }
   @keyframes sg-sweep {
     to { transform: translateX(100%); }
   }
 
-  /* Entrance: opacity and a short lift, once, staggered by the inline delay. */
   .sg-enter {
     opacity: 0;
     animation: sg-rise 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -433,15 +570,12 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .sg-dot {
-    animation: sg-pulse 1200ms ease-in-out infinite;
-  }
+  .sg-dot { animation: sg-pulse 1200ms ease-in-out infinite; }
   @keyframes sg-pulse {
     0%, 100% { opacity: 0.35; }
     50% { opacity: 1; }
   }
 
-  /* Results: one entrance, then the page stops performing. */
   .sg-reveal {
     opacity: 0;
     animation: sg-rise 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -456,7 +590,6 @@
   }
 }
 
-/* With motion off the entrance must not leave anything invisible. */
 @media (prefers-reduced-motion: reduce) {
   .sg-enter,
   .sg-reveal {
@@ -465,4 +598,6 @@
     transform: none !important;
   }
   .sg-shimmer::after { display: none; }
+  /* A still composition, not a broken one: the sweep simply is not there. */
+  .sg-scan { display: none; }
 }
