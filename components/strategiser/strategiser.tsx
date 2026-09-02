@@ -155,27 +155,47 @@ export function Strategiser({
     });
   };
 
-  // Results are a working document. They sit on the ordinary canvas with no
-  // atmosphere behind them: once someone is reading data, the page stops
-  // performing.
   if (phase === "plan" && result) {
     return (
-      <div className="mx-auto max-w-[80rem] space-y-8 px-4 py-10 sm:px-6">
-        {assumptions.length > 0 ? (
-          <ul className="space-y-1 text-sm text-ink-muted">
-            {assumptions.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        ) : null}
-        <PlanView
-          plan={result.plan}
-          brief={result.brief}
-          rosterEngagement={rosterEngagement}
-          regenerating={pending}
-          onRegenerate={() => run(slots, assumptions)}
-          onStartOver={reset}
-        />
+      <div className="sg-page relative -mt-14 min-h-dvh pt-14">
+        {/* Same lights, dimmed and stilled: nothing moves behind a price. */}
+        <HeroLights working={false} calm />
+
+        <div className="relative mx-auto w-full max-w-[47.5rem] px-4 pb-16 pt-10 sm:px-6">
+          {/* The brief stays at the top of the thread, so the answer is read
+              against the question that produced it. */}
+          <p className="mb-8 flex justify-end">
+            <span className="max-w-[85%] rounded-2xl rounded-br-md border border-white/12 bg-white/8 px-4 py-2.5 text-[15px] leading-relaxed text-white">
+              {thread.find((turn) => turn.role === "user")?.text ?? ""}
+            </span>
+          </p>
+
+          {assumptions.length > 0 ? (
+            <ul className="mb-8 space-y-1 text-sm text-white/45">
+              {assumptions.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <PlanView
+            plan={result.plan}
+            brief={result.brief}
+            rosterEngagement={rosterEngagement}
+            regenerating={pending}
+            onRegenerate={() => run(slots, assumptions)}
+            onFollowUp={(text) => {
+              // A refinement is another turn, not a new session: the thread
+              // carries the original brief, so the model keeps the context.
+              const next: Turn[] = [...thread, { role: "user", text }];
+              setThread(next);
+              setPhase("gathering");
+              setResult(null);
+              advance(next, Math.min(asked, MAX_QUESTIONS));
+            }}
+            onStartOver={reset}
+          />
+        </div>
       </div>
     );
   }
@@ -185,8 +205,8 @@ export function Strategiser({
       Fills everything below the nav, so the dark band ends at the fold rather
       than partway down with the page's own canvas showing beneath it.
     */
-    <section className="relative isolate -mt-14 flex min-h-dvh flex-col overflow-hidden bg-[#060505] pt-14">
-      <HeroLights working={building} />
+    <section className="sg-page relative isolate -mt-14 flex min-h-dvh flex-col overflow-hidden pt-14">
+      <HeroLights working={building} calm={false} />
 
       {/* Nudged above true centre: an optically centred composition sits a
           little high, and it leaves less dead space under the card. */}

@@ -3,19 +3,19 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The layered background behind the prompt card.
+ * The background for the whole route: two lights, a grid, and grain.
  *
- * Bottom to top: near-black base, three coloured lights, the masked grid, the
- * scan sweep, grain, vignette. Three colours is the ceiling — a fourth is what
- * turned the first version to mud.
+ * The grid spans the entire page so the scroll from prompt to shortlist has
+ * one continuous structure and no seam. The lights are confined to the top of
+ * the page and, once results are on screen, drop to a little over a third of
+ * their brightness and stop moving altogether — a client reads prices in that
+ * region, and light drifting behind small figures makes them tiring to read
+ * and the data feel less trustworthy.
  *
- * There is no JavaScript animation loop and there should never be one. The
- * only runtime work is an opacity variable written on scroll and a class
- * toggled when the tab is hidden. Everything else is CSS keyframes moving
- * transform and opacity, because anything else repaints every frame and will
- * stutter on the mid-range Android phones that are most of this market.
+ * No JavaScript animation loop. The only runtime work is an opacity variable
+ * written on scroll and a class toggled when the tab is hidden.
  */
-export function HeroLights({ working }: { working: boolean }) {
+export function HeroLights({ working, calm }: { working: boolean; calm: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -26,7 +26,8 @@ export function HeroLights({ working }: { working: boolean }) {
     const apply = () => {
       frame = 0;
       const height = window.innerHeight || 1;
-      const fade = Math.max(0, 1 - window.scrollY / height);
+      // Never all the way to nothing: the grid carries the long scroll.
+      const fade = Math.max(0.35, 1 - window.scrollY / height);
       node.style.setProperty("--sg-fade", fade.toFixed(3));
     };
     const onScroll = () => {
@@ -57,18 +58,16 @@ export function HeroLights({ working }: { working: boolean }) {
     <div
       ref={ref}
       aria-hidden
-      className={`sg-hero absolute inset-0 ${working ? "sg-working" : ""}`}
+      className={`sg-hero pointer-events-none absolute inset-0 ${working ? "sg-working" : ""} ${
+        calm ? "sg-calm" : ""
+      }`}
     >
-      <div className="sg-lights">
+      {/* Lights stay in the first screen; the page below them is plain dark. */}
+      <div className="sg-lights h-dvh" style={{ bottom: "auto" }}>
         <span className="sg-blob sg-blob-a" />
-        <span className="sg-blob sg-blob-b" />
         <span className="sg-blob sg-blob-c" />
       </div>
 
-      <div className="sg-ends" />
-
-      {/* One element, one background pattern. The inner layer carries the
-          drift so the mask on the parent does not move with it. */}
       <div className="sg-grid">
         <div className="sg-grid-lines">
           <div className="sg-scan" />
@@ -76,7 +75,6 @@ export function HeroLights({ working }: { working: boolean }) {
       </div>
 
       <div className="sg-grain" />
-      <div className="sg-vignette" />
     </div>
   );
 }
