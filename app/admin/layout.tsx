@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser, isAdmin, isEditor } from "@/lib/db/user";
+import { denyAccess } from "@/lib/auth/deny";
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ export default async function AdminLayout({
   // A viewer reaching an admin URL directly is sent to the product rather than
   // shown a shell whose every panel is empty because RLS blocked the queries
   // behind it.
-  if (!user) redirect("/login?next=/admin");
+  if (!user) return denyAccess();
   if (!isEditor(user)) redirect("/");
 
   return (

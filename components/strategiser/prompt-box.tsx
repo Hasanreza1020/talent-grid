@@ -91,7 +91,7 @@ export function PromptBox({
           }}
           rows={hero ? 3 : 2}
           placeholder={PROMPT_PLACEHOLDER}
-          className={`w-full resize-none bg-transparent text-white outline-none placeholder:text-white/55 ${
+          className={`w-full resize-none bg-transparent text-white outline-none placeholder:text-white/40 ${
             hero ? "pt-1.5 text-base leading-7" : "pt-1 text-[15px] leading-6"
           }`}
         />

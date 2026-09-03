@@ -9,12 +9,22 @@ import { Moon, Rocket, Smartphone, Wallet } from "lucide-react";
  */
 export const PROMPT_HEADLINE = "Describe the campaign. Get the creators.";
 
+/** One line at desktop widths, and not a restatement of the placeholder. */
 export function promptSubline(rosterSize: number): string {
-  return `Tell us what you sell, what you want to achieve and what you can spend. We build the shortlist from ${rosterSize} creators on file.`;
+  return `Every shortlist is built from the ${rosterSize} creators on file, using the figures we actually hold.`;
 }
 
+/*
+  An instruction, not a specimen brief.
+
+  A complete example here read as text somebody had already typed, while the
+  send button sat disabled beside it — which is the exact combination that
+  makes an interface look broken. The chips underneath are where the worked
+  examples belong: one click puts a real brief in the field, and then the
+  button lights up, which is the behaviour the example was meant to teach.
+*/
 export const PROMPT_PLACEHOLDER =
-  "We make affordable skincare for women 18 to 30. We're launching a new serum next month, budget around 200000 BDT, looking for about 6 creators.";
+  "Describe your campaign: what you sell, what you want out of it, your budget, and how many creators.";
 
 export const STARTER_CHIPS = [
   {

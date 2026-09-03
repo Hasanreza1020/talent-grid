@@ -21,7 +21,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     somehow ran before that redirect must not be able to read anything either,
     so nobody off the allowlist is ever described here as signed in.
   */
-  if (!isAuthorisedEmail(user.email)) return null;
+  if (!(await isAuthorisedEmail(user.email))) return null;
 
   const { data } = await supabase
     .from("users")

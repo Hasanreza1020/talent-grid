@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { isAuthorisedEmail } from "@/lib/auth/allowlist";
 
 /**
  * Refreshes the Supabase session on every request and keeps the product behind
@@ -83,29 +82,6 @@ export async function middleware(request: NextRequest) {
     // Return the person to where they were headed once they sign in.
     url.searchParams.set("next", pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
-  }
-
-  /*
-    A valid session is not the same as permission to be here. Anyone holding a
-    session for an address that is not on the allowlist is signed out on this
-    request — not merely shown less, signed out — so a profile row edited by
-    hand, a role that failed to save, or an account created before the
-    allowlist existed cannot become a way in.
-
-    This runs before every page and every server action reachable through one,
-    which is why it is the right place for the check rather than the layouts.
-  */
-  if (user && !isAuthorisedEmail(user.email)) {
-    await supabase.auth.signOut();
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = "?denied=1";
-    const denied = NextResponse.redirect(url);
-    // Clear the cookies on the response the browser actually receives.
-    for (const cookie of request.cookies.getAll()) {
-      if (cookie.name.startsWith("sb-")) denied.cookies.delete(cookie.name);
-    }
-    return denied;
   }
 
   if (user && pathname === "/login") {

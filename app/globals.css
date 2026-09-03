@@ -337,10 +337,10 @@
     /* Lit from the upper left, falling to near-black at the rim. */
     background: radial-gradient(
       circle at 34% 28%,
-      #d4490f 0%,
-      #8f2c07 38%,
-      #2a1108 72%,
-      #0d0705 100%
+      #ff7a33 0%,
+      #e0500f 30%,
+      #7d2606 62%,
+      #1a0b05 100%
     );
     /* Light bouncing back into the sphere along the far edge. */
     box-shadow:
@@ -367,7 +367,7 @@
   .sg-swirl {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(14px);
+    filter: blur(7px);
     will-change: transform;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
@@ -380,7 +380,7 @@
     top: 8%;
     left: 6%;
     background: radial-gradient(circle, #ff8a3c 0%, transparent 70%);
-    opacity: 0.85;
+    opacity: 0.95;
     animation-name: sg-swirl-a;
     animation-duration: 13s;
   }
@@ -390,7 +390,7 @@
     bottom: 4%;
     right: 2%;
     background: radial-gradient(circle, #ffb066 0%, transparent 72%);
-    opacity: 0.6;
+    opacity: 0.75;
     animation-name: sg-swirl-b;
     animation-duration: 17s;
   }
@@ -428,8 +428,8 @@
     height: 24%;
     border-radius: 9999px;
     background: radial-gradient(circle, rgb(255 240 225 / 0.9) 0%, transparent 70%);
-    filter: blur(5px);
-    opacity: 0.65;
+    filter: blur(4px);
+    opacity: 0.8;
     will-change: transform;
     animation: sg-spec-drift 11s ease-in-out infinite alternate;
   }
@@ -571,7 +571,7 @@
   */
   .sg-fit {
     --sg-orb: clamp(56px, 5.2vw, 72px);
-    --sg-gap: clamp(0.75rem, 2.2vh, 1.5rem);
+    --sg-gap: clamp(1rem, 3vh, 2rem);
   }
 
   .sg-fit .sg-orb-wrap {
@@ -600,14 +600,27 @@
     scroll does. Achieved by shrinking, never by clipping — no overflow hidden
     on the page, so zoom and keyboard navigation still reach everything.
   */
+  /*
+    The section is pulled up behind the nav with a negative margin, so it
+    starts at the top of the viewport and needs the whole of it. Subtracting
+    the nav height as well left the band ending short, with the page's own
+    cream showing underneath — which is the gap in the screenshot.
+
+    Unconditional, not inside the breakpoint: a short band on a phone is the
+    same bug. Only the centring and the tightened gaps are conditional.
+  */
+  .sg-fit {
+    min-height: 100dvh;
+  }
+
   @media (min-width: 1024px) and (min-height: 700px) {
     .sg-fit {
-      min-height: calc(100dvh - 3.5rem);
       justify-content: center;
     }
-    .sg-fit .sg-stack > * + * {
-      margin-top: var(--sg-gap);
-    }
+  }
+
+  .sg-fit .sg-stack > * + * {
+    margin-top: var(--sg-gap);
   }
 
   /* --- the home page's glass ------------------------------------------- */
