@@ -11,14 +11,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { setUserRole } from "@/app/admin/actions";
+import { revokeUser } from "@/app/admin/users/actions";
 import { USER_ROLES, USER_ROLE_LABEL, type AppUser } from "@/lib/types";
 
 export function UserTable({
   users,
   currentUserId,
+  canRevoke,
 }: {
   users: AppUser[];
   currentUserId: string;
+  /** False without a service key: the account itself cannot be deleted. */
+  canRevoke: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -29,6 +33,9 @@ export function UserTable({
         <tr className="border-b border-hairline text-left text-xs text-ink-muted">
           <th scope="col" className="py-2 pr-4 font-normal">Name</th>
           <th scope="col" className="py-2 font-normal">Role</th>
+          <th scope="col" className="py-2 text-right font-normal">
+            <span className="sr-only">Remove</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -66,6 +73,33 @@ export function UserTable({
                   ))}
                 </SelectContent>
               </Select>
+            </td>
+            <td className="py-2.5 text-right">
+              {canRevoke && user.id !== currentUserId ? (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    // One confirmation, because this deletes the account
+                    // itself and not only the role.
+                    const name = user.fullName ?? "this person";
+                    if (!window.confirm(`Remove all access for ${name}? The account is deleted.`)) {
+                      return;
+                    }
+                    startTransition(async () => {
+                      const result = await revokeUser(user.id);
+                      if (result.error) toast.error(result.error);
+                      else {
+                        toast.success(result.ok ?? "Access removed.");
+                        router.refresh();
+                      }
+                    });
+                  }}
+                  className="text-sm text-ink-muted underline-offset-4 hover:text-warn hover:underline"
+                >
+                  Remove
+                </button>
+              ) : null}
             </td>
           </tr>
         ))}

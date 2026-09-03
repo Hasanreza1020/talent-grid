@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, isAdmin, listUsers } from "@/lib/db/user";
 import { UserTable } from "@/components/admin/user-table";
+import { UserCreateForm } from "@/components/admin/user-create-form";
+import { hasServiceKey } from "@/lib/supabase/admin";
 import { SectionHeading } from "@/components/ui-bits";
 
 export const metadata = { title: "Users — Grid" };
@@ -29,7 +31,17 @@ export default async function AdminUsersPage() {
         </p>
       </div>
 
-      <UserTable users={users} currentUserId={current!.id} />
+      <UserTable users={users} currentUserId={current!.id} canRevoke={hasServiceKey()} />
+
+      <div className="space-y-4 border-t border-hairline pt-8">
+        <SectionHeading>Add someone</SectionHeading>
+        <p className="max-w-prose text-sm text-ink-muted">
+          This creates the account, sets the password and puts the address on the
+          allowlist in one step. All three are needed: an account without the
+          allowlist row can sign in and is then turned away at the door.
+        </p>
+        <UserCreateForm configured={hasServiceKey()} />
+      </div>
     </div>
   );
 }
