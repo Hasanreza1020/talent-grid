@@ -65,7 +65,14 @@ function isContained(a: string, b: string): boolean {
 }
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".jfif", ".avif"]);
 
-type Args = { dir: string; commit: boolean; reportPath: string; category: string | null };
+type Args = {
+  dir: string;
+  commit: boolean;
+  reportPath: string;
+  category: string | null;
+  /** Overwrite portraits that are already on file. Off by default. */
+  replace: boolean;
+};
 
 function parseArgs(argv: string[]): Args {
   const get = (name: string) => {
@@ -76,13 +83,15 @@ function parseArgs(argv: string[]): Args {
   if (!dir) {
     console.error(
       'Usage: tsx scripts/import-portraits.ts --dir "<folder>" [--commit]\n' +
-        "       Runs as a dry run unless --commit is given.",
+        "       Runs as a dry run unless --commit is given.\n" +
+        "       Creators that already have a portrait are skipped unless --replace.",
     );
     process.exit(1);
   }
   return {
     dir: resolve(dir),
     commit: argv.includes("--commit"),
+    replace: argv.includes("--replace"),
     reportPath: resolve(get("report") ?? "scripts/output/portrait-report.md"),
     category: get("category") ?? null,
   };
@@ -142,7 +151,14 @@ async function main() {
 
   for (const file of files) {
     const stem = basename(file, extname(file));
-    const normalisedStem = normaliseName(stem);
+    // The agency writes the social handle after the name — "Eza (Its Eza)",
+    // "Sanzida Arfin (Primu)" — and the sheet records only the name. Comparing
+    // with the handle still attached drags a genuine match well below the
+    // threshold, so the parenthetical is dropped before comparing. It is a
+    // handle, not part of the person's name. A trailing "(1)" from a duplicate
+    // download goes the same way, which is right for the same reason.
+    const stripped = stem.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+    const normalisedStem = normaliseName(stripped || stem);
 
     let best: { creator: (typeof creators)[number]; similarity: number } | null = null;
     for (const creator of creators ?? []) {
@@ -159,10 +175,10 @@ async function main() {
         // characters is a stronger signal than the distance is.
         similarity = Math.max(
           CONTAINMENT_SCORE,
-          nameSimilarity(creator.display_name, stem),
+          nameSimilarity(creator.display_name, stripped || stem),
         );
       } else {
-        similarity = nameSimilarity(creator.display_name, stem);
+        similarity = nameSimilarity(creator.display_name, stripped || stem);
       }
 
       if (!best || similarity > best.similarity) best = { creator, similarity };
@@ -217,10 +233,24 @@ async function main() {
   );
 
   let uploaded = 0;
+  let skipped = 0;
   const failures: { file: string; reason: string }[] = [];
+
+  // A creator who already has a portrait is left alone unless --replace is
+  // given. Uploading a hundred images over a home connection reliably throws
+  // the odd transient "fetch failed", and without this a re-run to pick up the
+  // handful that failed would push the whole folder again — more work, more
+  // chances to fail, on the connection that just proved unreliable.
+  const alreadyHas = new Set(
+    (creators ?? []).filter((creator) => creator.portrait_url !== null).map((c) => c.id),
+  );
 
   if (args.commit) {
     for (const match of matches) {
+      if (!args.replace && alreadyHas.has(match.creatorId)) {
+        skipped += 1;
+        continue;
+      }
       try {
         const source = readFileSync(join(args.dir, match.file));
         // Centre crop to 4:5, then resize. `cover` keeps the subject centred
@@ -339,7 +369,9 @@ async function main() {
     `${args.commit ? "Uploaded" : "Dry run"}: ${files.length} files, ` +
       `${matches.length} matched, ${unmatchedFiles.length} unmatched, ` +
       `${withoutImage.length} creator(s) still without a portrait.` +
-      (args.commit ? ` ${uploaded} uploaded, ${failures.length} failed.` : ""),
+      (args.commit
+        ? ` ${uploaded} uploaded, ${skipped} already had one, ${failures.length} failed.`
+        : ""),
   );
   console.log(`Report written to ${args.reportPath}`);
 }
