@@ -1,28 +1,35 @@
 import { LoginForm } from "./login-form";
 import { Wordmark } from "@/components/chrome/wordmark";
 
-export const metadata = { title: "Sign in — Grid" };
+export const metadata = {
+  title: "Sign in — Grid",
+  robots: { index: false, follow: false },
+};
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string }>;
+  searchParams: Promise<{ next?: string; denied?: string }>;
 }) {
   const params = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-[26rem] flex-col justify-center px-6 py-16">
       <Wordmark />
-      <h1 className="mt-2 font-display text-xl">
-        {params.mode === "signup" ? "Create an account" : "Sign in"}
-      </h1>
-      <p className="mt-2 text-sm text-ink-muted">
-        {params.mode === "signup"
-          ? "New accounts start with read-only access. An admin can raise your role once you are in."
-          : "The creator database for the team."}
-      </p>
+      <h1 className="mt-2 font-display text-xl">Sign in</h1>
 
-      <LoginForm mode={params.mode === "signup" ? "signup" : "signin"} next={params.next} />
+      {params.denied === "1" ? (
+        <p role="alert" className="mt-2 text-sm text-warn">
+          That account does not have access to this workspace. You have been signed out.
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-ink-muted">
+          This workspace is private. Accounts are created by the owner; there is no
+          sign-up.
+        </p>
+      )}
+
+      <LoginForm next={params.next} />
     </main>
   );
 }

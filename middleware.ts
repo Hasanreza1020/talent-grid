@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isAuthorisedEmail } from "@/lib/auth/allowlist";
 
 /**
  * Refreshes the Supabase session on every request and keeps the product behind
@@ -7,7 +8,10 @@ import { createServerClient } from "@supabase/ssr";
  * public surface, and it reads through a SECURITY DEFINER function rather than
  * through any table the anonymous role can reach.
  */
-const PUBLIC_PREFIXES = ["/login", "/share", "/auth"];
+// The tokenised client shortlist is the only surface reachable without a
+// session. /auth was listed here for a callback route that does not exist, and
+// an unused public prefix is an opening nobody is watching.
+const PUBLIC_PREFIXES = ["/login", "/share"];
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -81,6 +85,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  /*
+    A valid session is not the same as permission to be here. Anyone holding a
+    session for an address that is not on the allowlist is signed out on this
+    request — not merely shown less, signed out — so a profile row edited by
+    hand, a role that failed to save, or an account created before the
+    allowlist existed cannot become a way in.
+
+    This runs before every page and every server action reachable through one,
+    which is why it is the right place for the check rather than the layouts.
+  */
+  if (user && !isAuthorisedEmail(user.email)) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "?denied=1";
+    const denied = NextResponse.redirect(url);
+    // Clear the cookies on the response the browser actually receives.
+    for (const cookie of request.cookies.getAll()) {
+      if (cookie.name.startsWith("sb-")) denied.cookies.delete(cookie.name);
+    }
+    return denied;
+  }
+
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
@@ -88,7 +115,46 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Security headers applied to every response this matcher sees.
+  applySecurityHeaders(response.headers);
   return response;
+}
+
+/**
+ * Headers that cost nothing and close whole classes of attack.
+ *
+ * The script policy still allows inline and eval because the App Router's
+ * hydration payload needs both without a per-request nonce; the rest is as
+ * tight as the app actually needs. frame-ancestors none is the one that
+ * matters most here — it makes clickjacking the admin screens impossible.
+ */
+function applySecurityHeaders(headers: Headers) {
+  headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://*.supabase.co",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join("; "),
+  );
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  );
+  headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  // The CMS and the product are both private; keep them out of every index.
+  headers.set("X-Robots-Tag", "noindex, nofollow");
 }
 
 export const config = {

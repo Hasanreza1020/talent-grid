@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isAuthorisedEmail } from "@/lib/auth/allowlist";
 import type { AppUser, UserRole } from "@/lib/types";
 
 /**
@@ -13,6 +14,14 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  /*
+    The second of the three gates. The middleware turns an unauthorised session
+    away on the next request, but a server action or a route handler that
+    somehow ran before that redirect must not be able to read anything either,
+    so nobody off the allowlist is ever described here as signed in.
+  */
+  if (!isAuthorisedEmail(user.email)) return null;
 
   const { data } = await supabase
     .from("users")

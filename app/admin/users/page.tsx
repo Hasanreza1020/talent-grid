@@ -16,12 +16,16 @@ export default async function AdminUsersPage() {
       <SectionHeading>People with access</SectionHeading>
       <div className="max-w-prose space-y-2 text-sm text-ink-muted">
         <p>
-          Everyone who signs up starts as a viewer. A viewer can read creators, accounts
-          and metrics, but not contacts, rates or internal notes.
+          This workspace is locked to a single owner. There is no sign-up, and an
+          address that is not on the allowlist is signed out on sight, whatever role
+          its profile row claims.
         </p>
         <p>
-          An editor can read everything and change everything except users and the audit
-          log. An admin can do both, and can correct historic metric snapshots.
+          To let somebody else in: add their address to{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">public.allowed_emails</code>{" "}
+          and to <code className="rounded bg-muted px-1 py-0.5 text-xs">GRID_ALLOWED_EMAILS</code>{" "}
+          in the deployment, then create the account from the database. Both steps,
+          deliberately — neither one alone grants access.
         </p>
       </div>
 
