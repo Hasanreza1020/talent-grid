@@ -27,6 +27,30 @@ const signUpSchema = credentials.extend({
 export type AuthState = { error: string | null };
 
 /**
+ * A field that is absent and a field that is empty are the same thing to a
+ * person filling in a form, so they are the same thing here.
+ *
+ * Read straight from FormData, a missing input is null, and null fails Zod's
+ * type check before any custom message applies — so somebody who submits
+ * without a name is shown "Invalid input: expected string, received null",
+ * which tells them nothing and looks like the site is broken. Coercing to a
+ * string means they get the message written for them instead.
+ */
+function field(formData: FormData, name: string): string {
+  const value = formData.get(name);
+  return typeof value === "string" ? value : "";
+}
+
+function read(formData: FormData) {
+  const next = formData.get("next");
+  return {
+    email: field(formData, "email"),
+    password: field(formData, "password"),
+    next: typeof next === "string" && next ? next : undefined,
+  };
+}
+
+/**
  * Attempt throttling, per address and per source.
  *
  * In-memory, so it is per server instance and resets on redeploy — worth
@@ -63,11 +87,7 @@ function safeNext(next: string | undefined): string {
 }
 
 export async function signIn(_state: AuthState, formData: FormData): Promise<AuthState> {
-  const parsed = credentials.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-    next: formData.get("next") ?? undefined,
-  });
+  const parsed = credentials.safeParse(read(formData));
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -123,10 +143,8 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
  */
 export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = signUpSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-    fullName: formData.get("fullName"),
-    next: formData.get("next") ?? undefined,
+    ...read(formData),
+    fullName: field(formData, "fullName"),
   });
 
   if (!parsed.success) {

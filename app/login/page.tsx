@@ -33,7 +33,17 @@ export default async function LoginPage({
         </p>
       )}
 
-      <LoginForm mode={signup ? "signup" : "signin"} next={params.next} />
+      {/*
+        Keyed on the mode so switching between them remounts the form. Without
+        it the two share one useActionState: the action bound to the submit
+        button can end up being the other mode's, and an error from one is
+        still on screen in the other.
+      */}
+      <LoginForm
+        key={signup ? "signup" : "signin"}
+        mode={signup ? "signup" : "signin"}
+        next={params.next}
+      />
     </main>
   );
 }
