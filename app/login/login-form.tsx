@@ -1,20 +1,34 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, type AuthState } from "./actions";
+import { signIn, signUp, type AuthState } from "./actions";
 
-/** Sign in only. There is no account creation to link to any more. */
-export function LoginForm({ next }: { next?: string }) {
-  const [state, formAction, pending] = useActionState<AuthState, FormData>(signIn, {
+export function LoginForm({
+  mode,
+  next,
+}: {
+  mode: "signin" | "signup";
+  next?: string;
+}) {
+  const action = mode === "signup" ? signUp : signIn;
+  const [state, formAction, pending] = useActionState<AuthState, FormData>(action, {
     error: null,
   });
 
   return (
     <form action={formAction} className="mt-8 space-y-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
+
+      {mode === "signup" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="fullName">Full name</Label>
+          <Input id="fullName" name="fullName" autoComplete="name" required />
+        </div>
+      ) : null}
 
       <div className="space-y-1.5">
         <Label htmlFor="email">Email</Label>
@@ -27,8 +41,9 @@ export function LoginForm({ next }: { next?: string }) {
           id="password"
           name="password"
           type="password"
-          autoComplete="current-password"
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
           required
+          minLength={8}
         />
       </div>
 
@@ -39,8 +54,26 @@ export function LoginForm({ next }: { next?: string }) {
       ) : null}
 
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Working" : "Sign in"}
+        {pending ? "Working" : mode === "signup" ? "Create account" : "Sign in"}
       </Button>
+
+      <p className="pt-2 text-sm text-ink-muted">
+        {mode === "signup" ? (
+          <>
+            Already have an account?{" "}
+            <Link href="/login" className="text-ink underline underline-offset-4">
+              Sign in
+            </Link>
+          </>
+        ) : (
+          <>
+            No account yet?{" "}
+            <Link href="/login?mode=signup" className="text-ink underline underline-offset-4">
+              Create one
+            </Link>
+          </>
+        )}
+      </p>
     </form>
   );
 }

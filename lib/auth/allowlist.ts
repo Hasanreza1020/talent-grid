@@ -4,47 +4,39 @@ import { cache } from "react";
 import { createAdminClient, hasServiceKey } from "@/lib/supabase/admin";
 
 /**
- * Who is allowed into this deployment.
+ * An optional lock on who may hold an account, off unless it is configured.
  *
- * There are two sources, checked in that order.
+ * With nothing set, the product behaves as it always did: anyone can create an
+ * account, it starts as a viewer, and an admin raises the role deliberately.
+ * That is the default because it is what the product is for.
  *
- * 1. `public.allowed_emails` in the database, which the admin screen writes to
- *    when it creates or revokes an account. This is the real list once the
- *    lock-to-owner migration has been applied, and it is what makes managing
- *    people from the interface possible at all — an environment variable
- *    cannot be edited by a form.
+ * Set `GRID_ALLOWED_EMAILS` — or fill `public.allowed_emails` in the database —
+ * and it becomes an allowlist instead: anybody not on it is signed out on their
+ * next request whatever their profile row says. One environment variable turns
+ * the whole workspace private, and removing it opens it again, so locking down
+ * is a deployment setting rather than a code change.
  *
- * 2. The environment, as a bootstrap. It is what holds the door before that
- *    migration runs, and it is the way back in if the table is ever emptied by
- *    accident. The owner should stay in it permanently for exactly that
- *    reason.
- *
- * Reading the table needs the service role, because the table is deliberately
- * unreadable by `anon` and `authenticated`: a list of who has access is not
- * something a signed-in browser should be able to enumerate.
+ * Reading the table needs the service role, because a list of who has access
+ * is not something a signed-in browser should be able to enumerate.
  */
-const DEFAULT_ALLOWED = ["hasanreza2950@gmail.com"];
-
 function normalise(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }
 
-/** The bootstrap list. Never empty: an empty override falls back to the owner. */
+/** Addresses from the environment. Empty means "no restriction configured". */
 export function bootstrapEmails(): string[] {
   const raw = process.env.GRID_ALLOWED_EMAILS;
-  if (!raw) return DEFAULT_ALLOWED;
-  const parsed = raw.split(",").map(normalise).filter(Boolean);
-  return parsed.length > 0 ? parsed : DEFAULT_ALLOWED;
+  if (!raw) return [];
+  return raw.split(",").map(normalise).filter(Boolean);
 }
 
 /**
- * The addresses in the database, or null when there is no table to read yet.
+ * Addresses from the database, or null when there is no table to read.
  *
- * Null and empty mean different things here and must not be conflated. Null is
- * "this deployment has no allowlist table", which falls back to the bootstrap.
- * An empty array would be "the table exists and nobody is in it", which would
- * lock everybody out — so that case also falls back, rather than bricking the
- * product on a bad migration.
+ * Null and empty are not the same. Null is "this deployment has no allowlist
+ * table" and leaves the door as the environment found it. An empty table would
+ * be "nobody at all", which would lock everyone out of their own product on a
+ * bad migration, so that also reads as no restriction.
  */
 const storedEmails = cache(async (): Promise<string[] | null> => {
   if (!hasServiceKey()) return null;
@@ -62,10 +54,13 @@ export async function isAuthorisedEmail(email: string | null | undefined): Promi
   const candidate = normalise(email);
   if (!candidate) return false;
 
-  // The bootstrap always holds. Losing access to your own product because a
-  // row was deleted is a worse failure than one extra address being allowed.
-  if (bootstrapEmails().includes(candidate)) return true;
+  const configured = bootstrapEmails();
+  if (configured.includes(candidate)) return true;
 
   const stored = await storedEmails();
+
+  // Neither source is configured, so there is no allowlist to fail. Open.
+  if (configured.length === 0 && stored === null) return true;
+
   return stored !== null && stored.includes(candidate);
 }

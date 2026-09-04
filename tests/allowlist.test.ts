@@ -9,9 +9,9 @@ afterEach(() => {
 });
 
 describe("bootstrapEmails", () => {
-  it("is the owner by default", () => {
+  it("is empty when nothing is configured, which means no restriction", () => {
     delete process.env.GRID_ALLOWED_EMAILS;
-    expect(bootstrapEmails()).toEqual(["hasanreza2950@gmail.com"]);
+    expect(bootstrapEmails()).toEqual([]);
   });
 
   it("reads the override, normalised", () => {
@@ -19,18 +19,18 @@ describe("bootstrapEmails", () => {
     expect(bootstrapEmails()).toEqual(["a@example.com", "b@example.com"]);
   });
 
-  it("falls back to the owner rather than opening up when the override is empty", () => {
-    // The dangerous failure is an override that parses to nothing and is then
-    // read as "no restriction". It must never widen access, and it must never
-    // lock the owner out of their own product either.
+  it("treats a whitespace-only override as no restriction rather than nobody", () => {
+    // Locking every person out of their own product because a variable was set
+    // to a stray comma is a worse failure than leaving it open.
     process.env.GRID_ALLOWED_EMAILS = "   ,  ,";
-    expect(bootstrapEmails()).toEqual(["hasanreza2950@gmail.com"]);
+    expect(bootstrapEmails()).toEqual([]);
   });
 
-  it("does not admit a lookalike address", () => {
-    delete process.env.GRID_ALLOWED_EMAILS;
+  it("does not admit a lookalike of a configured address", () => {
+    process.env.GRID_ALLOWED_EMAILS = "owner@example.com";
     const list = bootstrapEmails();
-    expect(list).not.toContain("hasanreza2950@gmail.com.evil.com");
-    expect(list).not.toContain("x@hasanreza2950@gmail.com");
+    expect(list).toEqual(["owner@example.com"]);
+    expect(list).not.toContain("owner@example.com.evil.com");
+    expect(list).not.toContain("x@owner@example.com");
   });
 });

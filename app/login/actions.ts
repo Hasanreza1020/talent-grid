@@ -8,16 +8,20 @@ import { createClient } from "@/lib/supabase/server";
 import { isAuthorisedEmail } from "@/lib/auth/allowlist";
 
 /**
- * Sign in, and nothing else.
+ * Sign in and sign up.
  *
- * Account creation has been removed rather than hidden: there is no signUp
- * action here for a form or a script to reach. The only way an account can
- * exist now is for somebody with database access to create it deliberately.
+ * A new account starts as a viewer and an admin raises the role deliberately;
+ * the database default and the RLS policy on public.users both enforce that,
+ * so nothing here can mint an editor.
  */
 const credentials = z.object({
   email: z.email("Enter a valid email address."),
   password: z.string().min(8, "Passwords are at least 8 characters."),
   next: z.string().optional(),
+});
+
+const signUpSchema = credentials.extend({
+  fullName: z.string().min(1, "Enter your name."),
 });
 
 export type AuthState = { error: string | null };
@@ -79,12 +83,11 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
   }
 
   /*
-    Checked before the password is ever sent upstream. An address that is not
-    allowed cannot be signed in whatever the password is, and the wording is
-    identical to a wrong password so this does not become a way to discover
-    which address is the real one.
+    Only meaningful when an allowlist is configured; open by default. Checked
+    before the password goes upstream, and worded identically to a wrong
+    password so it cannot be used to learn which address is the real one.
   */
-  if (!isAuthorisedEmail(parsed.data.email)) {
+  if (!(await isAuthorisedEmail(parsed.data.email))) {
     return { error: "That email and password combination was not recognised." };
   }
 
@@ -100,12 +103,53 @@ export async function signIn(_state: AuthState, formData: FormData): Promise<Aut
   }
 
   // Belt and braces: the address that came back must also be allowed.
-  if (!isAuthorisedEmail(data.user.email)) {
+  if (!(await isAuthorisedEmail(data.user.email))) {
     await supabase.auth.signOut();
     return { error: "That email and password combination was not recognised." };
   }
 
   clearAttempts(key);
+  revalidatePath("/", "layout");
+  redirect(safeNext(parsed.data.next));
+}
+
+/**
+ * Create an account.
+ *
+ * The role is not a parameter and cannot be one: public.users defaults every
+ * new row to viewer, and the RLS policy lets a person edit their own row only
+ * while the role stays what it already is. Raising somebody is an admin action
+ * on the users screen.
+ */
+export async function signUp(_state: AuthState, formData: FormData): Promise<AuthState> {
+  const parsed = signUpSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    fullName: formData.get("fullName"),
+    next: formData.get("next") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  // An allowlisted deployment refuses the account rather than creating one it
+  // would then sign out on the next request.
+  if (!(await isAuthorisedEmail(parsed.data.email))) {
+    return {
+      error: "This workspace is invitation only. Ask an admin to create your account.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: { data: { full_name: parsed.data.fullName } },
+  });
+
+  if (error) return { error: error.message };
+
   revalidatePath("/", "layout");
   redirect(safeNext(parsed.data.next));
 }
