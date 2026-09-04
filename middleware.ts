@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isPublicSite } from "@/lib/public/site";
 
 /**
  * Refreshes the Supabase session on every request and keeps the product behind
@@ -11,6 +12,46 @@ import { createServerClient } from "@supabase/ssr";
 // session. /auth was listed here for a callback route that does not exist, and
 // an unused public prefix is an opening nobody is watching.
 const PUBLIC_PREFIXES = ["/login", "/share"];
+
+/**
+ * The public showcase and the private product are the same codebase deployed
+ * twice, told apart by one environment variable.
+ *
+ * On the public deployment the /public tree is served at the root and nothing
+ * else is reachable — no sign-in, no admin, no compare, no shortlists. On the
+ * private deployment the /public tree does not exist. Neither can be reached
+ * from the other by editing a URL, and the private product is untouched by all
+ * of it because the flag is off there.
+ */
+const PUBLIC_SITE_ROUTES: Record<string, string> = {
+  "/": "/public",
+  "/creators": "/public/creators",
+  "/strategiser": "/public/strategiser",
+};
+
+function publicSiteResponse(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+
+  const mapped = PUBLIC_SITE_ROUTES[pathname];
+  if (mapped) {
+    const url = request.nextUrl.clone();
+    url.pathname = mapped;
+    return NextResponse.rewrite(url);
+  }
+
+  if (pathname.startsWith("/creators/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/public${pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // Anything else — the CMS, the login form, the compare tray's API, the
+  // private tree itself — simply does not exist on this domain.
+  const home = request.nextUrl.clone();
+  home.pathname = "/";
+  home.search = "";
+  return NextResponse.redirect(home);
+}
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -42,6 +83,18 @@ export async function middleware(request: NextRequest) {
         `</main></body></html>`,
       { status: 503, headers: { "content-type": "text/html; charset=utf-8" } },
     );
+  }
+
+  if (isPublicSite()) {
+    const publicResponse = publicSiteResponse(request);
+    applySecurityHeaders(publicResponse.headers, true);
+    return publicResponse;
+  }
+
+  // The private tree is not part of the private deployment's URL space either,
+  // so the two cannot be confused if the flag is ever set wrongly.
+  if (request.nextUrl.pathname.startsWith("/public")) {
+    return new NextResponse("Not found", { status: 404 });
   }
 
   let response = NextResponse.next({ request });
@@ -104,7 +157,7 @@ export async function middleware(request: NextRequest) {
  * tight as the app actually needs. frame-ancestors none is the one that
  * matters most here — it makes clickjacking the admin screens impossible.
  */
-function applySecurityHeaders(headers: Headers) {
+function applySecurityHeaders(headers: Headers, indexable = false) {
   headers.set(
     "Content-Security-Policy",
     [
@@ -129,8 +182,9 @@ function applySecurityHeaders(headers: Headers) {
     "camera=(), microphone=(), geolocation=(), interest-cohort=()",
   );
   headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
-  // The CMS and the product are both private; keep them out of every index.
-  headers.set("X-Robots-Tag", "noindex, nofollow");
+  // The private product and the CMS stay out of every index. The showcase is
+  // the one deployment that is meant to be found.
+  if (!indexable) headers.set("X-Robots-Tag", "noindex, nofollow");
 }
 
 export const config = {
