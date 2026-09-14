@@ -27,13 +27,23 @@ function supabaseImagePattern() {
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: supabaseImagePattern(),
-    // The home page alone asks for a hero wall and a collage per category.
-    // AVIF is materially smaller than WebP on photographic content, and the
-    // optimiser falls back on its own where a browser cannot take it.
-    formats: ["image/avif", "image/webp"],
-    // Portraits are served at 28, 32, 56, 80 and 128 css pixels. The default
-    // ladder starts at 16 and climbs in steps that miss most of those.
-    imageSizes: [28, 32, 48, 56, 80, 96, 128, 256, 384],
+    /*
+      Vercel's image optimiser is switched off, and that is deliberate.
+
+      This product renders a lot of distinct portraits: a hero wall, a
+      sixteen-tile collage for every category, eight cards per category
+      section. Every unique combination of file, width and quality is a
+      separate billed transformation, so a single visit to the home page can
+      ask for hundreds — and the plan's allowance ran out, which makes
+      /_next/image answer 402 for every portrait on the site. An optimiser
+      that returns Payment Required is worse than no optimiser.
+
+      The portraits are already WebP, cropped and resized by the import
+      script, so they arrive optimised. What the optimiser was adding was
+      per-width variants; the fix for that is smaller stored files and a
+      thumbnail for the small slots, which costs nothing per request.
+    */
+    unoptimized: true,
   },
   experimental: {
     // Both are barrel files. Without this the whole icon set and the whole
