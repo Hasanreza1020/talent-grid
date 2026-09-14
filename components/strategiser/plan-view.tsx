@@ -15,6 +15,7 @@ import {
   initialsOf,
   NO_DATA,
 } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 import { PLATFORM_LABEL } from "@/lib/types";
 import type { Brief, Candidate, Pick, Plan } from "@/lib/strategiser/types";
 
@@ -278,7 +279,7 @@ function ResultCard({
         <span className="size-14 shrink-0 overflow-hidden rounded-xl bg-white/5">
           {creator.avatarUrl ? (
             <Image
-              src={creator.avatarUrl}
+              src={thumbOf(creator.avatarUrl)!}
               alt=""
               width={56}
               height={56}

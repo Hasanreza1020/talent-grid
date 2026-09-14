@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initialsOf } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 import { useCompare, COMPARE_MIN, COMPARE_MAX } from "./compare-context";
 
 type Summary = {
@@ -123,7 +124,7 @@ export function CompareTray() {
               <span className="block size-10 overflow-hidden rounded-full bg-stone">
                 {summary.portraitUrl ? (
                   <Image
-                    src={summary.portraitUrl}
+                    src={thumbOf(summary.portraitUrl)!}
                     alt={summary.displayName}
                     width={40}
                     height={40}

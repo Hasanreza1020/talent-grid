@@ -3,6 +3,7 @@ import { getSharedShortlist } from "@/lib/db/shortlists";
 import { formatCompact, formatBdt, formatDate, formatPercent, initialsOf, NO_DATA } from "@/lib/format";
 import { DELIVERABLE_LABEL, PLATFORM_LABEL, TIER_LABEL } from "@/lib/types";
 import type { Deliverable, Platform, Tier } from "@/lib/types";
+import { thumbOf } from "@/lib/portrait";
 
 export const metadata = { title: "Creator shortlist" };
 
@@ -78,7 +79,7 @@ export default async function SharedShortlistPage({
                 <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-stone">
                   {creator.portraitUrl ? (
                     <Image
-                      src={creator.portraitUrl}
+                      src={thumbOf(creator.portraitUrl)!}
                       alt={creator.displayName}
                       width={240}
                       height={300}

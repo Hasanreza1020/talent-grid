@@ -5,6 +5,7 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlatformIcon } from "@/components/platform-icon";
 import { formatCompact, initialsOf, NO_DATA } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 import type { CompareSubject } from "@/lib/compare-page/subjects";
 
 /** An unfilled slot: a dashed outline that is itself the button. */
@@ -76,7 +77,7 @@ export function FilledSlot({
       <div className="mt-6 size-14 shrink-0 overflow-hidden rounded-full bg-stone">
         {creator.avatarUrl ? (
           <Image
-            src={creator.avatarUrl}
+            src={thumbOf(creator.avatarUrl)!}
             alt=""
             width={56}
             height={56}

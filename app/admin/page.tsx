@@ -12,6 +12,7 @@ import {
   initialsOf,
   NO_DATA,
 } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 import { PLATFORM_LABEL, TIER_LABEL } from "@/lib/types";
 
 export const metadata = { title: "Admin — Grid" };
@@ -217,7 +218,7 @@ export default async function AdminDashboardPage() {
                         <span className="size-7 shrink-0 overflow-hidden rounded-full bg-stone">
                           {row.portraitUrl ? (
                             <Image
-                              src={row.portraitUrl}
+                              src={thumbOf(row.portraitUrl)!}
                               alt=""
                               width={28}
                               height={28}

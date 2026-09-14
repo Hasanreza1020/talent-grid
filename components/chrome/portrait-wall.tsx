@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { initialsOf } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 
 export type WallCreator = {
   slug: string;
@@ -83,7 +84,7 @@ export function PortraitWall({
                 >
                   {creator.portraitUrl ? (
                     <Image
-                      src={creator.portraitUrl}
+                      src={thumbOf(creator.portraitUrl)!}
                       alt=""
                       width={128}
                       height={160}

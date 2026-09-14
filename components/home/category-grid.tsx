@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, Users } from "lucide-react";
 import { collageSize, type CategoryCard } from "@/lib/home/categories";
+import { thumbOf } from "@/lib/portrait";
 import { formatCompact, formatNumber, NO_DATA } from "@/lib/format";
 
 /**
@@ -59,7 +60,7 @@ function CategoryTile({ card, eager }: { card: CategoryCard; eager: boolean }) {
             {tiles.map((url, index) => (
               <span key={`${url}-${index}`} className="relative block bg-stone">
                 <Image
-                  src={url}
+                  src={thumbOf(url)!}
                   alt=""
                   fill
                   // A tile is a quarter of a card that is at most ~300px wide.

@@ -8,6 +8,7 @@ import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { initialsOf } from "@/lib/format";
+import { thumbOf } from "@/lib/portrait";
 import {
   removeFromShortlist,
   reorderShortlist,
@@ -56,7 +57,7 @@ export function ShortlistEditor({
             <span className="block size-16 overflow-hidden rounded-lg bg-stone">
               {item.portraitUrl ? (
                 <Image
-                  src={item.portraitUrl}
+                  src={thumbOf(item.portraitUrl)!}
                   alt={item.displayName}
                   width={64}
                   height={80}
